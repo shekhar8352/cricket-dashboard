@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cricket Analytics Dashboard
+
+A comprehensive cricket performance tracking and analytics platform built with Next.js, MongoDB, and Chart.js.
+
+## Features
+
+### Data Entry
+- **Player Management**: Add detailed player information including personal details, career timeline, and team history
+- **Match Recording**: Comprehensive match data entry with support for all formats (Test, ODI, T20, etc.) and levels (School, Domestic, Ranji, IPL, International)
+- **Performance Tracking**: Detailed batting, bowling, and fielding statistics for each match
+
+### Analytics Dashboard
+- **Interactive Charts**: Visual representation of performance data using Chart.js
+- **Multi-dimensional Analysis**: Filter by format, level, opponent, venue, and time period
+- **Key Metrics**: Batting average, strike rate, bowling average, economy rate, and more
+- **Performance Trends**: Track progress over time with detailed trend analysis
+
+## Tech Stack
+
+- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes
+- **Database**: MongoDB with Mongoose ODM
+- **Charts**: Chart.js with react-chartjs-2
+- **Forms**: React Hook Form with Zod validation
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 18+ 
+- MongoDB database (local or cloud)
 
+### Installation
+
+1. Clone the repository
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd cricket-dashboard
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up environment variables
+Create a `.env` file in the root directory:
+```env
+MONGODB_URL="your-mongodb-connection-string"
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Run the development server
+```bash
+npm run dev
+```
 
-## Learn More
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-To learn more about Next.js, take a look at the following resources:
+## Usage
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Adding Data
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Player Information**: Navigate to Data Entry → Player Info tab
+   - Fill in personal details, career information, and team history
+   - All required fields are marked with *
 
-## Deploy on Vercel
+2. **Match Details**: Navigate to Data Entry → Match Details tab
+   - Enter match information including level, format, date, venue, and opponent
+   - Add optional details like toss information and series details
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. **Performance Data**: Navigate to Data Entry → Performance tab
+   - Select a previously entered match
+   - Add batting, bowling, and fielding statistics
+   - System automatically calculates derived metrics like strike rate and economy
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Viewing Analytics
+
+1. Navigate to the Analytics Dashboard
+2. Use filters to narrow down data by format and level
+3. View key statistics cards for quick overview
+4. Analyze detailed charts for performance trends
+5. Review tabular data for specific breakdowns
+
+## Data Models
+
+The application uses the following main data models:
+
+- **Player**: Personal information and career details
+- **Match**: Match-specific information and metadata
+- **Performance**: Individual match performance data
+- **Competition**: Tournament and series information
+- **Stats**: Aggregated statistics by format and level
+
+## API Endpoints
+
+- `POST /api/players` - Create new player
+- `GET /api/players` - Fetch all players
+- `POST /api/matches` - Create new match
+- `GET /api/matches` - Fetch all matches
+- `POST /api/performances` - Create new performance record
+- `GET /api/performances` - Fetch all performances
+- `GET /api/analytics` - Fetch analytics data with optional filters
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
