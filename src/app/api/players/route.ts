@@ -8,12 +8,22 @@ export async function POST(request: NextRequest) {
     
     const body = await request.json();
     
+    // Check if there's already an active player
+    const existingPlayer = await Player.findOne({ isActive: true });
+    if (existingPlayer) {
+      return NextResponse.json(
+        { success: false, error: 'A player already exists. Only one player is allowed in this system.' },
+        { status: 400 }
+      );
+    }
+    
     // Create new player
     const player = new Player({
       ...body,
       dob: new Date(body.dob),
       careerStart: new Date(body.careerStart),
       careerEnd: body.careerEnd ? new Date(body.careerEnd) : undefined,
+      isActive: true,
     });
     
     await player.save();
@@ -39,6 +49,50 @@ export async function GET() {
     console.error('Error fetching players:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch players' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    await connectDB();
+    
+    const body = await request.json();
+    const { playerId, ...updateData } = body;
+    
+    // Only allow updates to specific fields (minor changes)
+    const allowedUpdates = ['currentTeam', 'careerEnd', 'teams'];
+    const updates: any = {};
+    
+    Object.keys(updateData).forEach(key => {
+      if (allowedUpdates.includes(key)) {
+        updates[key] = updateData[key];
+      }
+    });
+    
+    if (updates.careerEnd) {
+      updates.careerEnd = new Date(updates.careerEnd);
+    }
+    
+    const player = await Player.findByIdAndUpdate(
+      playerId,
+      updates,
+      { new: true, runValidators: true }
+    );
+    
+    if (!player) {
+      return NextResponse.json(
+        { success: false, error: 'Player not found' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json({ success: true, player });
+  } catch (error) {
+    console.error('Error updating player:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to update player' },
       { status: 500 }
     );
   }

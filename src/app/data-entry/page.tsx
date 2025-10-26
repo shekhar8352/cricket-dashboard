@@ -4,6 +4,12 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Form validation schemas
 const playerSchema = z.object({
@@ -32,20 +38,16 @@ const matchSchema = z.object({
 
 const performanceSchema = z.object({
   matchId: z.string().min(1, 'Match selection is required'),
-  // Batting
   runs: z.number().min(0).optional(),
   ballsFaced: z.number().min(0).optional(),
   fours: z.number().min(0).optional(),
   sixes: z.number().min(0).optional(),
   dismissalType: z.string().optional(),
   dismissalBowler: z.string().optional(),
-  dismissalFielder: z.string().optional(),
-  // Bowling
   overs: z.number().min(0).optional(),
   maidens: z.number().min(0).optional(),
   runsConceded: z.number().min(0).optional(),
   wickets: z.number().min(0).optional(),
-  // Fielding
   catches: z.number().min(0).optional(),
   stumpings: z.number().min(0).optional(),
   runOuts: z.number().min(0).optional(),
@@ -64,7 +66,21 @@ export default function DataEntryPage() {
     resolver: zodResolver(playerSchema),
   });
 
+  const matchForm = useForm<MatchFormData>({
+    resolver: zodResolver(matchSchema),
+  });
+
+  const performanceForm = useForm<PerformanceFormData>({
+    resolver: zodResolver(performanceSchema),
+  });
+
   // Fetch matches when performance tab is selected
+  React.useEffect(() => {
+    if (activeTab === 'performance') {
+      fetchMatches();
+    }
+  }, [activeTab]);
+
   const fetchMatches = async () => {
     try {
       const response = await fetch('/api/matches');
@@ -76,21 +92,6 @@ export default function DataEntryPage() {
       console.error('Error fetching matches:', error);
     }
   };
-
-  // Fetch matches when component mounts or when switching to performance tab
-  React.useEffect(() => {
-    if (activeTab === 'performance') {
-      fetchMatches();
-    }
-  }, [activeTab]);
-
-  const matchForm = useForm<MatchFormData>({
-    resolver: zodResolver(matchSchema),
-  });
-
-  const performanceForm = useForm<PerformanceFormData>({
-    resolver: zodResolver(performanceSchema),
-  });
 
   const onSubmitPlayer = async (data: PlayerFormData) => {
     setLoading(true);
@@ -158,491 +159,429 @@ export default function DataEntryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen py-8">
       <div className="max-w-4xl mx-auto px-4">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Cricket Data Entry</h1>
-        
-        {/* Tab Navigation */}
-        <div className="flex space-x-1 bg-gray-200 p-1 rounded-lg mb-8">
-          {[
-            { key: 'player', label: 'Player Info' },
-            { key: 'match', label: 'Match Details' },
-            { key: 'performance', label: 'Performance' },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
-              className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
-                activeTab === tab.key
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-2">Cricket Data Entry</h1>
+          <p className="text-muted-foreground">Enter player information, match details, and performance statistics</p>
         </div>
+        
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="player">Player Info</TabsTrigger>
+            <TabsTrigger value="match">Match Details</TabsTrigger>
+            <TabsTrigger value="performance">Performance</TabsTrigger>
+          </TabsList>
 
-        {/* Player Form */}
-        {activeTab === 'player' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-6">Player Information</h2>
-            <form onSubmit={playerForm.handleSubmit(onSubmitPlayer)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name *
-                  </label>
-                  <input
-                    {...playerForm.register('fullName')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter full name"
-                  />
-                  {playerForm.formState.errors.fullName && (
-                    <p className="text-red-500 text-sm mt-1">{playerForm.formState.errors.fullName.message}</p>
-                  )}
-                </div>
+          <TabsContent value="player">
+            <Card>
+              <CardHeader>
+                <CardTitle>Player Information</CardTitle>
+                <CardDescription>
+                  Enter the player's basic information and career details
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={playerForm.handleSubmit(onSubmitPlayer)} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName">Full Name *</Label>
+                      <Input
+                        id="fullName"
+                        {...playerForm.register('fullName')}
+                        placeholder="Enter full name"
+                      />
+                      {playerForm.formState.errors.fullName && (
+                        <p className="text-destructive text-sm">{playerForm.formState.errors.fullName.message}</p>
+                      )}
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date of Birth *
-                  </label>
-                  <input
-                    type="date"
-                    {...playerForm.register('dob')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  {playerForm.formState.errors.dob && (
-                    <p className="text-red-500 text-sm mt-1">{playerForm.formState.errors.dob.message}</p>
-                  )}
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="dob">Date of Birth *</Label>
+                      <Input
+                        id="dob"
+                        type="date"
+                        {...playerForm.register('dob')}
+                      />
+                      {playerForm.formState.errors.dob && (
+                        <p className="text-destructive text-sm">{playerForm.formState.errors.dob.message}</p>
+                      )}
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Country *
-                  </label>
-                  <input
-                    {...playerForm.register('country')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., India, Australia"
-                  />
-                  {playerForm.formState.errors.country && (
-                    <p className="text-red-500 text-sm mt-1">{playerForm.formState.errors.country.message}</p>
-                  )}
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="country">Country *</Label>
+                      <Input
+                        id="country"
+                        {...playerForm.register('country')}
+                        placeholder="e.g., India, Australia"
+                      />
+                      {playerForm.formState.errors.country && (
+                        <p className="text-destructive text-sm">{playerForm.formState.errors.country.message}</p>
+                      )}
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Role *
-                  </label>
-                  <select
-                    {...playerForm.register('role')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select role</option>
-                    <option value="batsman">Batsman</option>
-                    <option value="bowler">Bowler</option>
-                    <option value="allrounder">All-rounder</option>
-                    <option value="wicketkeeper">Wicket-keeper</option>
-                  </select>
-                  {playerForm.formState.errors.role && (
-                    <p className="text-red-500 text-sm mt-1">{playerForm.formState.errors.role.message}</p>
-                  )}
-                </div>
+                    <div className="space-y-2">
+                      <Label>Role *</Label>
+                      <Select onValueChange={(value) => playerForm.setValue('role', value as any)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="batsman">Batsman</SelectItem>
+                          <SelectItem value="bowler">Bowler</SelectItem>
+                          <SelectItem value="allrounder">All-rounder</SelectItem>
+                          <SelectItem value="wicketkeeper">Wicket-keeper</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {playerForm.formState.errors.role && (
+                        <p className="text-destructive text-sm">{playerForm.formState.errors.role.message}</p>
+                      )}
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Batting Style *
-                  </label>
-                  <input
-                    {...playerForm.register('battingStyle')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., Right-handed, Left-handed"
-                  />
-                  {playerForm.formState.errors.battingStyle && (
-                    <p className="text-red-500 text-sm mt-1">{playerForm.formState.errors.battingStyle.message}</p>
-                  )}
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="battingStyle">Batting Style *</Label>
+                      <Input
+                        id="battingStyle"
+                        {...playerForm.register('battingStyle')}
+                        placeholder="e.g., Right-handed, Left-handed"
+                      />
+                      {playerForm.formState.errors.battingStyle && (
+                        <p className="text-destructive text-sm">{playerForm.formState.errors.battingStyle.message}</p>
+                      )}
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Bowling Style
-                  </label>
-                  <input
-                    {...playerForm.register('bowlingStyle')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., Right-arm fast, Left-arm spin"
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="bowlingStyle">Bowling Style</Label>
+                      <Input
+                        id="bowlingStyle"
+                        {...playerForm.register('bowlingStyle')}
+                        placeholder="e.g., Right-arm fast, Left-arm spin"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Career Start *
-                  </label>
-                  <input
-                    type="date"
-                    {...playerForm.register('careerStart')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  {playerForm.formState.errors.careerStart && (
-                    <p className="text-red-500 text-sm mt-1">{playerForm.formState.errors.careerStart.message}</p>
-                  )}
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="careerStart">Career Start *</Label>
+                      <Input
+                        id="careerStart"
+                        type="date"
+                        {...playerForm.register('careerStart')}
+                      />
+                      {playerForm.formState.errors.careerStart && (
+                        <p className="text-destructive text-sm">{playerForm.formState.errors.careerStart.message}</p>
+                      )}
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Career End
-                  </label>
-                  <input
-                    type="date"
-                    {...playerForm.register('careerEnd')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {loading ? 'Adding Player...' : 'Add Player'}
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* Match Form */}
-        {activeTab === 'match' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-6">Match Details</h2>
-            <form onSubmit={matchForm.handleSubmit(onSubmitMatch)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Level *
-                  </label>
-                  <select
-                    {...matchForm.register('level')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select level</option>
-                    <option value="school">School</option>
-                    <option value="domestic">Domestic</option>
-                    <option value="Ranji">Ranji Trophy</option>
-                    <option value="IPL">IPL</option>
-                    <option value="international">International</option>
-                  </select>
-                  {matchForm.formState.errors.level && (
-                    <p className="text-red-500 text-sm mt-1">{matchForm.formState.errors.level.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Format *
-                  </label>
-                  <select
-                    {...matchForm.register('format')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select format</option>
-                    <option value="Test">Test</option>
-                    <option value="ODI">ODI</option>
-                    <option value="T20">T20</option>
-                    <option value="First-class">First-class</option>
-                    <option value="List-A">List-A</option>
-                    <option value="T20-domestic">T20 Domestic</option>
-                  </select>
-                  {matchForm.formState.errors.format && (
-                    <p className="text-red-500 text-sm mt-1">{matchForm.formState.errors.format.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Match Date *
-                  </label>
-                  <input
-                    type="date"
-                    {...matchForm.register('date')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  {matchForm.formState.errors.date && (
-                    <p className="text-red-500 text-sm mt-1">{matchForm.formState.errors.date.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Venue *
-                  </label>
-                  <input
-                    {...matchForm.register('venue')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., Eden Gardens, Kolkata"
-                  />
-                  {matchForm.formState.errors.venue && (
-                    <p className="text-red-500 text-sm mt-1">{matchForm.formState.errors.venue.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Opponent *
-                  </label>
-                  <input
-                    {...matchForm.register('opponent')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., Australia, Mumbai Indians"
-                  />
-                  {matchForm.formState.errors.opponent && (
-                    <p className="text-red-500 text-sm mt-1">{matchForm.formState.errors.opponent.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Result
-                  </label>
-                  <input
-                    {...matchForm.register('result')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., Won by 5 wickets, Lost by 20 runs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Toss Winner
-                  </label>
-                  <input
-                    {...matchForm.register('tossWinner')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Team that won the toss"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Toss Decision
-                  </label>
-                  <select
-                    {...matchForm.register('tossDecision')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select decision</option>
-                    <option value="bat">Bat first</option>
-                    <option value="bowl">Bowl first</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Series
-                  </label>
-                  <input
-                    {...matchForm.register('series')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., India vs Australia Test Series 2023"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Man of the Match
-                  </label>
-                  <input
-                    {...matchForm.register('manOfTheMatch')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Player name"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {loading ? 'Adding Match...' : 'Add Match'}
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* Performance Form */}
-        {activeTab === 'performance' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-6">Performance Data</h2>
-            <form onSubmit={performanceForm.handleSubmit(onSubmitPerformance)} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Match *
-                </label>
-                <select
-                  {...performanceForm.register('matchId')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select a match</option>
-                  {matches.map((match) => (
-                    <option key={match._id} value={match._id}>
-                      {match.opponent} - {match.format} - {new Date(match.date).toLocaleDateString()}
-                    </option>
-                  ))}
-                </select>
-                {performanceForm.formState.errors.matchId && (
-                  <p className="text-red-500 text-sm mt-1">{performanceForm.formState.errors.matchId.message}</p>
-                )}
-              </div>
-
-              {/* Batting Performance */}
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-medium mb-4">Batting Performance</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Runs</label>
-                    <input
-                      type="number"
-                      {...performanceForm.register('runs', { valueAsNumber: true })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      min="0"
-                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="careerEnd">Career End</Label>
+                      <Input
+                        id="careerEnd"
+                        type="date"
+                        {...playerForm.register('careerEnd')}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Balls Faced</label>
-                    <input
-                      type="number"
-                      {...performanceForm.register('ballsFaced', { valueAsNumber: true })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Fours</label>
-                    <input
-                      type="number"
-                      {...performanceForm.register('fours', { valueAsNumber: true })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Sixes</label>
-                    <input
-                      type="number"
-                      {...performanceForm.register('sixes', { valueAsNumber: true })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Dismissal Type</label>
-                    <input
-                      {...performanceForm.register('dismissalType')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="e.g., caught, bowled, lbw"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Dismissal Bowler</label>
-                    <input
-                      {...performanceForm.register('dismissalBowler')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Bowler name"
-                    />
-                  </div>
-                </div>
-              </div>
 
-              {/* Bowling Performance */}
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-medium mb-4">Bowling Performance</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Overs</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      {...performanceForm.register('overs', { valueAsNumber: true })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Maidens</label>
-                    <input
-                      type="number"
-                      {...performanceForm.register('maidens', { valueAsNumber: true })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Runs Conceded</label>
-                    <input
-                      type="number"
-                      {...performanceForm.register('runsConceded', { valueAsNumber: true })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Wickets</label>
-                    <input
-                      type="number"
-                      {...performanceForm.register('wickets', { valueAsNumber: true })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      min="0"
-                    />
-                  </div>
-                </div>
-              </div>
+                  <Button type="submit" disabled={loading} className="w-full">
+                    {loading ? 'Adding Player...' : 'Add Player'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-              {/* Fielding Performance */}
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-medium mb-4">Fielding Performance</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Catches</label>
-                    <input
-                      type="number"
-                      {...performanceForm.register('catches', { valueAsNumber: true })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Stumpings</label>
-                    <input
-                      type="number"
-                      {...performanceForm.register('stumpings', { valueAsNumber: true })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Run Outs</label>
-                    <input
-                      type="number"
-                      {...performanceForm.register('runOuts', { valueAsNumber: true })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      min="0"
-                    />
-                  </div>
-                </div>
-              </div>
+          <TabsContent value="match">
+            <Card>
+              <CardHeader>
+                <CardTitle>Match Details</CardTitle>
+                <CardDescription>
+                  Enter match information including venue, opponent, and match conditions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={matchForm.handleSubmit(onSubmitMatch)} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label>Level *</Label>
+                      <Select onValueChange={(value) => matchForm.setValue('level', value as any)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="school">School</SelectItem>
+                          <SelectItem value="domestic">Domestic</SelectItem>
+                          <SelectItem value="Ranji">Ranji Trophy</SelectItem>
+                          <SelectItem value="IPL">IPL</SelectItem>
+                          <SelectItem value="international">International</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {matchForm.formState.errors.level && (
+                        <p className="text-destructive text-sm">{matchForm.formState.errors.level.message}</p>
+                      )}
+                    </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {loading ? 'Adding Performance...' : 'Add Performance'}
-              </button>
-            </form>
-          </div>
-        )}
+                    <div className="space-y-2">
+                      <Label>Format *</Label>
+                      <Select onValueChange={(value) => matchForm.setValue('format', value as any)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select format" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Test">Test</SelectItem>
+                          <SelectItem value="ODI">ODI</SelectItem>
+                          <SelectItem value="T20">T20</SelectItem>
+                          <SelectItem value="First-class">First-class</SelectItem>
+                          <SelectItem value="List-A">List-A</SelectItem>
+                          <SelectItem value="T20-domestic">T20 Domestic</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {matchForm.formState.errors.format && (
+                        <p className="text-destructive text-sm">{matchForm.formState.errors.format.message}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="date">Match Date *</Label>
+                      <Input
+                        id="date"
+                        type="date"
+                        {...matchForm.register('date')}
+                      />
+                      {matchForm.formState.errors.date && (
+                        <p className="text-destructive text-sm">{matchForm.formState.errors.date.message}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="venue">Venue *</Label>
+                      <Input
+                        id="venue"
+                        {...matchForm.register('venue')}
+                        placeholder="e.g., Eden Gardens, Kolkata"
+                      />
+                      {matchForm.formState.errors.venue && (
+                        <p className="text-destructive text-sm">{matchForm.formState.errors.venue.message}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="opponent">Opponent *</Label>
+                      <Input
+                        id="opponent"
+                        {...matchForm.register('opponent')}
+                        placeholder="e.g., Australia, Mumbai Indians"
+                      />
+                      {matchForm.formState.errors.opponent && (
+                        <p className="text-destructive text-sm">{matchForm.formState.errors.opponent.message}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="result">Result</Label>
+                      <Input
+                        id="result"
+                        {...matchForm.register('result')}
+                        placeholder="e.g., Won by 5 wickets"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="series">Series</Label>
+                      <Input
+                        id="series"
+                        {...matchForm.register('series')}
+                        placeholder="e.g., India vs Australia Test Series 2023"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="manOfTheMatch">Man of the Match</Label>
+                      <Input
+                        id="manOfTheMatch"
+                        {...matchForm.register('manOfTheMatch')}
+                        placeholder="Player name"
+                      />
+                    </div>
+                  </div>
+
+                  <Button type="submit" disabled={loading} className="w-full">
+                    {loading ? 'Adding Match...' : 'Add Match'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="performance">
+            <Card>
+              <CardHeader>
+                <CardTitle>Performance Data</CardTitle>
+                <CardDescription>
+                  Enter batting, bowling, and fielding performance for a specific match
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={performanceForm.handleSubmit(onSubmitPerformance)} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label>Select Match *</Label>
+                    <Select onValueChange={(value) => performanceForm.setValue('matchId', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a match" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {matches.map((match) => (
+                          <SelectItem key={match._id} value={match._id}>
+                            {match.opponent} - {match.format} - {new Date(match.date).toLocaleDateString()}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {performanceForm.formState.errors.matchId && (
+                      <p className="text-destructive text-sm">{performanceForm.formState.errors.matchId.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Batting Performance</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="runs">Runs</Label>
+                        <Input
+                          id="runs"
+                          type="number"
+                          {...performanceForm.register('runs', { valueAsNumber: true })}
+                          min="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="ballsFaced">Balls Faced</Label>
+                        <Input
+                          id="ballsFaced"
+                          type="number"
+                          {...performanceForm.register('ballsFaced', { valueAsNumber: true })}
+                          min="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="fours">Fours</Label>
+                        <Input
+                          id="fours"
+                          type="number"
+                          {...performanceForm.register('fours', { valueAsNumber: true })}
+                          min="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="sixes">Sixes</Label>
+                        <Input
+                          id="sixes"
+                          type="number"
+                          {...performanceForm.register('sixes', { valueAsNumber: true })}
+                          min="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="dismissalType">Dismissal Type</Label>
+                        <Input
+                          id="dismissalType"
+                          {...performanceForm.register('dismissalType')}
+                          placeholder="e.g., caught, bowled, lbw"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="dismissalBowler">Dismissal Bowler</Label>
+                        <Input
+                          id="dismissalBowler"
+                          {...performanceForm.register('dismissalBowler')}
+                          placeholder="Bowler name"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Bowling Performance</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="overs">Overs</Label>
+                        <Input
+                          id="overs"
+                          type="number"
+                          step="0.1"
+                          {...performanceForm.register('overs', { valueAsNumber: true })}
+                          min="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="maidens">Maidens</Label>
+                        <Input
+                          id="maidens"
+                          type="number"
+                          {...performanceForm.register('maidens', { valueAsNumber: true })}
+                          min="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="runsConceded">Runs Conceded</Label>
+                        <Input
+                          id="runsConceded"
+                          type="number"
+                          {...performanceForm.register('runsConceded', { valueAsNumber: true })}
+                          min="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="wickets">Wickets</Label>
+                        <Input
+                          id="wickets"
+                          type="number"
+                          {...performanceForm.register('wickets', { valueAsNumber: true })}
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Fielding Performance</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="catches">Catches</Label>
+                        <Input
+                          id="catches"
+                          type="number"
+                          {...performanceForm.register('catches', { valueAsNumber: true })}
+                          min="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="stumpings">Stumpings</Label>
+                        <Input
+                          id="stumpings"
+                          type="number"
+                          {...performanceForm.register('stumpings', { valueAsNumber: true })}
+                          min="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="runOuts">Run Outs</Label>
+                        <Input
+                          id="runOuts"
+                          type="number"
+                          {...performanceForm.register('runOuts', { valueAsNumber: true })}
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button type="submit" disabled={loading} className="w-full">
+                    {loading ? 'Adding Performance...' : 'Add Performance'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
