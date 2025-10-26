@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -53,7 +53,19 @@ const performanceSchema = z.object({
   runOuts: z.number().min(0).optional(),
 });
 
+// Schema for updating existing player (only teams and career end date)
+const playerUpdateSchema = z.object({
+  teams: z.array(z.object({
+    name: z.string().min(1, 'Team name is required'),
+    level: z.enum(['school', 'domestic', 'Ranji', 'IPL', 'international']),
+    from: z.string().min(1, 'Start date is required'),
+    to: z.string().optional(),
+  })).optional(),
+  careerEnd: z.string().optional(),
+});
+
 type PlayerFormData = z.infer<typeof playerSchema>;
+type PlayerUpdateFormData = z.infer<typeof playerUpdateSchema>;
 type MatchFormData = z.infer<typeof matchSchema>;
 type PerformanceFormData = z.infer<typeof performanceSchema>;
 
@@ -61,9 +73,15 @@ export default function DataEntryPage() {
   const [activeTab, setActiveTab] = useState<'player' | 'match' | 'performance'>('player');
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [existingPlayer, setExistingPlayer] = useState<any>(null);
+  const [checkingPlayer, setCheckingPlayer] = useState(true);
 
   const playerForm = useForm<PlayerFormData>({
     resolver: zodResolver(playerSchema),
+  });
+
+  const playerUpdateForm = useForm<PlayerUpdateFormData>({
+    resolver: zodResolver(playerUpdateSchema),
   });
 
   const matchForm = useForm<MatchFormData>({
@@ -74,12 +92,44 @@ export default function DataEntryPage() {
     resolver: zodResolver(performanceSchema),
   });
 
+  // Check for existing player on component mount
+  useEffect(() => {
+    checkExistingPlayer();
+  }, []);
+
   // Fetch matches when performance tab is selected
-  React.useEffect(() => {
+  useEffect(() => {
     if (activeTab === 'performance') {
       fetchMatches();
     }
   }, [activeTab]);
+
+  const checkExistingPlayer = async () => {
+    setCheckingPlayer(true);
+    try {
+      const response = await fetch('/api/players');
+      const data = await response.json();
+      if (data.success && data.players.length > 0) {
+        const activePlayer = data.players.find((p: { isActive: boolean }) => p.isActive);
+        if (activePlayer) {
+          setExistingPlayer(activePlayer);
+          // Pre-populate the update form with existing data
+          playerUpdateForm.setValue('careerEnd', activePlayer.careerEnd ? new Date(activePlayer.careerEnd).toISOString().split('T')[0] : '');
+          if (activePlayer.teams && activePlayer.teams.length > 0) {
+            playerUpdateForm.setValue('teams', activePlayer.teams.map((team: any) => ({
+              name: team.name,
+              level: team.level,
+              from: new Date(team.from).toISOString().split('T')[0],
+              to: team.to ? new Date(team.to).toISOString().split('T')[0] : '',
+            })));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for existing player:', error);
+    }
+    setCheckingPlayer(false);
+  };
 
   const fetchMatches = async () => {
     try {
@@ -105,11 +155,42 @@ export default function DataEntryPage() {
       if (response.ok) {
         alert('Player added successfully!');
         playerForm.reset();
+        // Refresh to check for the new player
+        checkExistingPlayer();
       } else {
-        alert('Error adding player');
+        const errorData = await response.json();
+        alert(errorData.error || 'Error adding player');
       }
     } catch (error) {
       alert('Error adding player');
+    }
+    setLoading(false);
+  };
+
+  const onSubmitPlayerUpdate = async (data: PlayerUpdateFormData) => {
+    setLoading(true);
+    try {
+      const updateData = {
+        playerId: existingPlayer._id,
+        ...data,
+      };
+
+      const response = await fetch('/api/players', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+      });
+      
+      if (response.ok) {
+        alert('Player updated successfully!');
+        // Refresh player data
+        checkExistingPlayer();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Error updating player');
+      }
+    } catch (error) {
+      alert('Error updating player');
     }
     setLoading(false);
   };
@@ -158,12 +239,324 @@ export default function DataEntryPage() {
     setLoading(false);
   };
 
+  // Component for creating a new player
+  const NewPlayerForm = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Player Information</CardTitle>
+        <CardDescription>
+          Enter the player's basic information and career details
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={playerForm.handleSubmit(onSubmitPlayer)} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Full Name *</Label>
+              <Input
+                id="fullName"
+                {...playerForm.register('fullName')}
+                placeholder="Enter full name"
+              />
+              {playerForm.formState.errors.fullName && (
+                <p className="text-destructive text-sm">{playerForm.formState.errors.fullName.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dob">Date of Birth *</Label>
+              <Input
+                id="dob"
+                type="date"
+                {...playerForm.register('dob')}
+              />
+              {playerForm.formState.errors.dob && (
+                <p className="text-destructive text-sm">{playerForm.formState.errors.dob.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="country">Country *</Label>
+              <Input
+                id="country"
+                {...playerForm.register('country')}
+                placeholder="e.g., India, Australia"
+              />
+              {playerForm.formState.errors.country && (
+                <p className="text-destructive text-sm">{playerForm.formState.errors.country.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Role *</Label>
+              <Select onValueChange={(value) => playerForm.setValue('role', value as any)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="batsman">Batsman</SelectItem>
+                  <SelectItem value="bowler">Bowler</SelectItem>
+                  <SelectItem value="allrounder">All-rounder</SelectItem>
+                  <SelectItem value="wicketkeeper">Wicket-keeper</SelectItem>
+                </SelectContent>
+              </Select>
+              {playerForm.formState.errors.role && (
+                <p className="text-destructive text-sm">{playerForm.formState.errors.role.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="battingStyle">Batting Style *</Label>
+              <Input
+                id="battingStyle"
+                {...playerForm.register('battingStyle')}
+                placeholder="e.g., Right-handed, Left-handed"
+              />
+              {playerForm.formState.errors.battingStyle && (
+                <p className="text-destructive text-sm">{playerForm.formState.errors.battingStyle.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="bowlingStyle">Bowling Style</Label>
+              <Input
+                id="bowlingStyle"
+                {...playerForm.register('bowlingStyle')}
+                placeholder="e.g., Right-arm fast, Left-arm spin"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="careerStart">Career Start *</Label>
+              <Input
+                id="careerStart"
+                type="date"
+                {...playerForm.register('careerStart')}
+              />
+              {playerForm.formState.errors.careerStart && (
+                <p className="text-destructive text-sm">{playerForm.formState.errors.careerStart.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="careerEnd">Career End</Label>
+              <Input
+                id="careerEnd"
+                type="date"
+                {...playerForm.register('careerEnd')}
+              />
+            </div>
+          </div>
+
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? 'Adding Player...' : 'Add Player'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+
+  // Component for updating existing player (only teams and career end date)
+  const PlayerUpdateForm = () => {
+    type TeamType = {
+      name: string;
+      level: 'school' | 'domestic' | 'Ranji' | 'IPL' | 'international';
+      from: string;
+      to: string;
+    };
+
+    const [teams, setTeams] = useState<TeamType[]>(
+      existingPlayer?.teams?.map((team: any) => ({
+        name: team.name || '',
+        level: team.level || 'school',
+        from: team.from ? new Date(team.from).toISOString().split('T')[0] : '',
+        to: team.to ? new Date(team.to).toISOString().split('T')[0] : '',
+      })) || [{ name: '', level: 'school' as const, from: '', to: '' }]
+    );
+
+    const addTeam = () => {
+      setTeams([...teams, { name: '', level: 'school', from: '', to: '' }]);
+    };
+
+    const removeTeam = (index: number) => {
+      setTeams(teams.filter((_: TeamType, i: number) => i !== index));
+    };
+
+    const updateTeam = (index: number, field: keyof TeamType, value: string) => {
+      const updatedTeams = teams.map((team: TeamType, i: number) => 
+        i === index ? { ...team, [field]: value } : team
+      );
+      setTeams(updatedTeams);
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      const formData = playerUpdateForm.getValues();
+      onSubmitPlayerUpdate({
+        ...formData,
+        teams: teams.filter((team: TeamType) => team.name && team.from), // Only include teams with name and from date
+      });
+    };
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Update Player Information</CardTitle>
+          <CardDescription>
+            You can only update teams and career end date for {existingPlayer.fullName}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Display read-only player info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-muted rounded-lg">
+              <div>
+                <Label className="text-sm font-medium">Full Name</Label>
+                <p className="text-sm text-muted-foreground">{existingPlayer.fullName}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Date of Birth</Label>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(existingPlayer.dob).toLocaleDateString()}
+                </p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Country</Label>
+                <p className="text-sm text-muted-foreground">{existingPlayer.country}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Role</Label>
+                <p className="text-sm text-muted-foreground">{existingPlayer.role}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Career Start</Label>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(existingPlayer.careerStart).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+
+            {/* Editable fields */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="careerEndUpdate">Career End Date</Label>
+                <Input
+                  id="careerEndUpdate"
+                  type="date"
+                  {...playerUpdateForm.register('careerEnd')}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-lg font-medium">Teams</Label>
+                  <Button type="button" onClick={addTeam} variant="outline" size="sm">
+                    Add Team
+                  </Button>
+                </div>
+                
+                {teams.map((team: TeamType, index: number) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg">
+                    <div className="space-y-2">
+                      <Label>Team Name *</Label>
+                      <Input
+                        value={team.name}
+                        onChange={(e) => updateTeam(index, 'name', e.target.value)}
+                        placeholder="e.g., Mumbai Indians"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Level *</Label>
+                      <Select 
+                        value={team.level} 
+                        onValueChange={(value) => updateTeam(index, 'level', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="school">School</SelectItem>
+                          <SelectItem value="domestic">Domestic</SelectItem>
+                          <SelectItem value="Ranji">Ranji Trophy</SelectItem>
+                          <SelectItem value="IPL">IPL</SelectItem>
+                          <SelectItem value="international">International</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>From Date *</Label>
+                      <Input
+                        type="date"
+                        value={team.from}
+                        onChange={(e) => updateTeam(index, 'from', e.target.value)}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>To Date</Label>
+                      <Input
+                        type="date"
+                        value={team.to}
+                        onChange={(e) => updateTeam(index, 'to', e.target.value)}
+                      />
+                    </div>
+                    
+                    <div className="flex items-end">
+                      <Button 
+                        type="button" 
+                        onClick={() => removeTeam(index)} 
+                        variant="destructive" 
+                        size="sm"
+                        disabled={teams.length === 1}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? 'Updating Player...' : 'Update Player'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  if (checkingPlayer) {
+    return (
+      <div className="min-h-screen py-8 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Checking for existing player...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen py-8">
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Cricket Data Entry</h1>
-          <p className="text-muted-foreground">Enter player information, match details, and performance statistics</p>
+          <p className="text-muted-foreground">
+            {existingPlayer 
+              ? `Managing data for ${existingPlayer.fullName}` 
+              : 'Enter player information, match details, and performance statistics'
+            }
+          </p>
+          {existingPlayer && (
+            <div className="mt-4 p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                Player exists: You can only edit teams and career end date
+              </p>
+            </div>
+          )}
         </div>
         
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
@@ -174,119 +567,11 @@ export default function DataEntryPage() {
           </TabsList>
 
           <TabsContent value="player">
-            <Card>
-              <CardHeader>
-                <CardTitle>Player Information</CardTitle>
-                <CardDescription>
-                  Enter the player's basic information and career details
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={playerForm.handleSubmit(onSubmitPlayer)} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="fullName">Full Name *</Label>
-                      <Input
-                        id="fullName"
-                        {...playerForm.register('fullName')}
-                        placeholder="Enter full name"
-                      />
-                      {playerForm.formState.errors.fullName && (
-                        <p className="text-destructive text-sm">{playerForm.formState.errors.fullName.message}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="dob">Date of Birth *</Label>
-                      <Input
-                        id="dob"
-                        type="date"
-                        {...playerForm.register('dob')}
-                      />
-                      {playerForm.formState.errors.dob && (
-                        <p className="text-destructive text-sm">{playerForm.formState.errors.dob.message}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="country">Country *</Label>
-                      <Input
-                        id="country"
-                        {...playerForm.register('country')}
-                        placeholder="e.g., India, Australia"
-                      />
-                      {playerForm.formState.errors.country && (
-                        <p className="text-destructive text-sm">{playerForm.formState.errors.country.message}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Role *</Label>
-                      <Select onValueChange={(value) => playerForm.setValue('role', value as any)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="batsman">Batsman</SelectItem>
-                          <SelectItem value="bowler">Bowler</SelectItem>
-                          <SelectItem value="allrounder">All-rounder</SelectItem>
-                          <SelectItem value="wicketkeeper">Wicket-keeper</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {playerForm.formState.errors.role && (
-                        <p className="text-destructive text-sm">{playerForm.formState.errors.role.message}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="battingStyle">Batting Style *</Label>
-                      <Input
-                        id="battingStyle"
-                        {...playerForm.register('battingStyle')}
-                        placeholder="e.g., Right-handed, Left-handed"
-                      />
-                      {playerForm.formState.errors.battingStyle && (
-                        <p className="text-destructive text-sm">{playerForm.formState.errors.battingStyle.message}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="bowlingStyle">Bowling Style</Label>
-                      <Input
-                        id="bowlingStyle"
-                        {...playerForm.register('bowlingStyle')}
-                        placeholder="e.g., Right-arm fast, Left-arm spin"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="careerStart">Career Start *</Label>
-                      <Input
-                        id="careerStart"
-                        type="date"
-                        {...playerForm.register('careerStart')}
-                      />
-                      {playerForm.formState.errors.careerStart && (
-                        <p className="text-destructive text-sm">{playerForm.formState.errors.careerStart.message}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="careerEnd">Career End</Label>
-                      <Input
-                        id="careerEnd"
-                        type="date"
-                        {...playerForm.register('careerEnd')}
-                      />
-                    </div>
-                  </div>
-
-                  <Button type="submit" disabled={loading} className="w-full">
-                    {loading ? 'Adding Player...' : 'Add Player'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+            {existingPlayer ? (
+              <PlayerUpdateForm />
+            ) : (
+              <NewPlayerForm />
+            )}
           </TabsContent>
 
           <TabsContent value="match">
