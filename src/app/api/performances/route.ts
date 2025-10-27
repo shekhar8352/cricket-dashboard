@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/database/mongoose';
-import Performance from '@/database/models/Performance.model';
+import Performance from '@/database/models/Performance';
 
 export async function POST(request: NextRequest) {
   try {

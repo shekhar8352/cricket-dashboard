@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/database/mongoose';
-import Match from '@/database/models/Match.model';
+import Match from '@/database/models/Match';
 
 export async function POST(request: NextRequest) {
   try {

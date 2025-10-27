@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/database/mongoose';
-import Performance from '@/database/models/Performance.model';
-import Match from '@/database/models/Match.model';
+import Performance from '@/database/models/Performance';
+import Match from '@/database/models/Match';
 
 export async function GET(request: NextRequest) {
   try {

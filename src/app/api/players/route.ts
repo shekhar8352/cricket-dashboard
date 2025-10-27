@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/database/mongoose';
-import Player from '@/database/models/Player.model';
+import Player from '@/database/models/Player';
 
 export async function POST(request: NextRequest) {
   try {
