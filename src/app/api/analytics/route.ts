@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const level = searchParams.get('level');
     
     // Build match filter
-    const matchFilter: any = {};
+    const matchFilter: Record<string, string> = {};
     if (format && format !== 'all') {
       matchFilter.format = format;
     }
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const totalOvers = performances.reduce((sum, p) => sum + (p.overs || 0), 0);
     
     const battingInnings = performances.filter(p => p.runs !== undefined && p.runs !== null).length;
-    const bowlingInnings = performances.filter(p => p.wickets !== undefined && p.wickets !== null).length;
+    // const bowlingInnings = performances.filter(p => p.wickets !== undefined && p.wickets !== null).length;
     
     const battingAverage = battingInnings > 0 ? totalRuns / battingInnings : 0;
     const bowlingAverage = totalWickets > 0 ? totalRunsConceded / totalWickets : 0;

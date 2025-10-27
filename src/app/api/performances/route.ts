@@ -9,7 +9,27 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Calculate derived stats
-    const performance: any = {
+    const performance: {
+      match: string;
+      runs?: number;
+      ballsFaced?: number;
+      fours?: number;
+      sixes?: number;
+      strikeRate?: number;
+      dismissal?: {
+        type: string;
+        bowler?: string;
+        fielder?: string;
+      };
+      overs?: number;
+      maidens?: number;
+      runsConceded?: number;
+      wickets?: number;
+      economy?: number;
+      catches?: number;
+      stumpings?: number;
+      runOuts?: number;
+    } = {
       match: body.matchId,
     };
 
@@ -21,7 +41,7 @@ export async function POST(request: NextRequest) {
       performance.sixes = body.sixes || 0;
       
       // Calculate strike rate
-      if (performance.ballsFaced > 0) {
+      if (performance.ballsFaced && performance.ballsFaced > 0 && performance.runs !== undefined) {
         performance.strikeRate = (performance.runs / performance.ballsFaced) * 100;
       }
       
@@ -43,7 +63,7 @@ export async function POST(request: NextRequest) {
       performance.wickets = body.wickets || 0;
       
       // Calculate economy rate
-      if (performance.overs > 0) {
+      if (performance.overs && performance.overs > 0 && performance.runsConceded !== undefined) {
         performance.economy = performance.runsConceded / performance.overs;
       }
     }

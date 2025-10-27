@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -71,9 +71,31 @@ type PerformanceFormData = z.infer<typeof performanceSchema>;
 
 export default function DataEntryPage() {
   const [activeTab, setActiveTab] = useState<'player' | 'match' | 'performance'>('player');
-  const [matches, setMatches] = useState<any[]>([]);
+  const [matches, setMatches] = useState<Array<{
+    _id: string;
+    opponent: string;
+    format: string;
+    date: string;
+    venue: string;
+    level: string;
+  }>>([]);
   const [loading, setLoading] = useState(false);
-  const [existingPlayer, setExistingPlayer] = useState<any>(null);
+  const [existingPlayer, setExistingPlayer] = useState<{
+    _id: string;
+    fullName: string;
+    dob: string;
+    country: string;
+    role: string;
+    careerStart: string;
+    careerEnd?: string;
+    isActive: boolean;
+    teams?: Array<{
+      name: string;
+      level: string;
+      from: string;
+      to?: string;
+    }>;
+  } | null>(null);
   const [checkingPlayer, setCheckingPlayer] = useState(true);
 
   const playerForm = useForm<PlayerFormData>({
@@ -92,19 +114,7 @@ export default function DataEntryPage() {
     resolver: zodResolver(performanceSchema),
   });
 
-  // Check for existing player on component mount
-  useEffect(() => {
-    checkExistingPlayer();
-  }, []);
-
-  // Fetch matches when performance tab is selected
-  useEffect(() => {
-    if (activeTab === 'performance') {
-      fetchMatches();
-    }
-  }, [activeTab]);
-
-  const checkExistingPlayer = async () => {
+  const checkExistingPlayer = useCallback(async () => {
     setCheckingPlayer(true);
     try {
       const response = await fetch('/api/players');
@@ -116,7 +126,12 @@ export default function DataEntryPage() {
           // Pre-populate the update form with existing data
           playerUpdateForm.setValue('careerEnd', activePlayer.careerEnd ? new Date(activePlayer.careerEnd).toISOString().split('T')[0] : '');
           if (activePlayer.teams && activePlayer.teams.length > 0) {
-            playerUpdateForm.setValue('teams', activePlayer.teams.map((team: any) => ({
+            playerUpdateForm.setValue('teams', activePlayer.teams.map((team: {
+              name: string;
+              level: string;
+              from: string;
+              to?: string;
+            }) => ({
               name: team.name,
               level: team.level,
               from: new Date(team.from).toISOString().split('T')[0],
@@ -125,11 +140,23 @@ export default function DataEntryPage() {
           }
         }
       }
-    } catch (error) {
-      console.error('Error checking for existing player:', error);
+    } catch {
+      console.error('Error checking for existing player');
     }
     setCheckingPlayer(false);
-  };
+  }, [playerUpdateForm]);
+
+  // Check for existing player on component mount
+  useEffect(() => {
+    checkExistingPlayer();
+  }, [checkExistingPlayer]);
+
+  // Fetch matches when performance tab is selected
+  useEffect(() => {
+    if (activeTab === 'performance') {
+      fetchMatches();
+    }
+  }, [activeTab]);
 
   const fetchMatches = async () => {
     try {
@@ -138,8 +165,8 @@ export default function DataEntryPage() {
       if (data.success) {
         setMatches(data.matches);
       }
-    } catch (error) {
-      console.error('Error fetching matches:', error);
+    } catch {
+      console.error('Error fetching matches');
     }
   };
 
@@ -161,13 +188,18 @@ export default function DataEntryPage() {
         const errorData = await response.json();
         alert(errorData.error || 'Error adding player');
       }
-    } catch (error) {
+    } catch {
       alert('Error adding player');
     }
     setLoading(false);
   };
 
   const onSubmitPlayerUpdate = async (data: PlayerUpdateFormData) => {
+    if (!existingPlayer) {
+      alert('No existing player found');
+      return;
+    }
+    
     setLoading(true);
     try {
       const updateData = {
@@ -189,7 +221,7 @@ export default function DataEntryPage() {
         const errorData = await response.json();
         alert(errorData.error || 'Error updating player');
       }
-    } catch (error) {
+    } catch {
       alert('Error updating player');
     }
     setLoading(false);
@@ -212,7 +244,7 @@ export default function DataEntryPage() {
       } else {
         alert('Error adding match');
       }
-    } catch (error) {
+    } catch {
       alert('Error adding match');
     }
     setLoading(false);
@@ -233,7 +265,7 @@ export default function DataEntryPage() {
       } else {
         alert('Error adding performance');
       }
-    } catch (error) {
+    } catch {
       alert('Error adding performance');
     }
     setLoading(false);
@@ -245,7 +277,7 @@ export default function DataEntryPage() {
       <CardHeader>
         <CardTitle>Player Information</CardTitle>
         <CardDescription>
-          Enter the player's basic information and career details
+          Enter the player&apos;s basic information and career details
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -289,7 +321,7 @@ export default function DataEntryPage() {
 
             <div className="space-y-2">
               <Label>Role *</Label>
-              <Select onValueChange={(value) => playerForm.setValue('role', value as any)}>
+              <Select onValueChange={(value) => playerForm.setValue('role', value as 'batsman' | 'bowler' | 'allrounder' | 'wicketkeeper')}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
@@ -366,9 +398,14 @@ export default function DataEntryPage() {
     };
 
     const [teams, setTeams] = useState<TeamType[]>(
-      existingPlayer?.teams?.map((team: any) => ({
+      existingPlayer?.teams?.map((team: {
+        name: string;
+        level: string;
+        from: string;
+        to?: string;
+      }) => ({
         name: team.name || '',
-        level: team.level || 'school',
+        level: (team.level as 'school' | 'domestic' | 'Ranji' | 'IPL' | 'international') || 'school',
         from: team.from ? new Date(team.from).toISOString().split('T')[0] : '',
         to: team.to ? new Date(team.to).toISOString().split('T')[0] : '',
       })) || [{ name: '', level: 'school' as const, from: '', to: '' }]
@@ -403,7 +440,7 @@ export default function DataEntryPage() {
         <CardHeader>
           <CardTitle>Update Player Information</CardTitle>
           <CardDescription>
-            You can only update teams and career end date for {existingPlayer.fullName}
+            You can only update teams and career end date for {existingPlayer?.fullName}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -412,26 +449,26 @@ export default function DataEntryPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-muted rounded-lg">
               <div>
                 <Label className="text-sm font-medium">Full Name</Label>
-                <p className="text-sm text-muted-foreground">{existingPlayer.fullName}</p>
+                <p className="text-sm text-muted-foreground">{existingPlayer?.fullName}</p>
               </div>
               <div>
                 <Label className="text-sm font-medium">Date of Birth</Label>
                 <p className="text-sm text-muted-foreground">
-                  {new Date(existingPlayer.dob).toLocaleDateString()}
+                  {existingPlayer?.dob ? new Date(existingPlayer.dob).toLocaleDateString() : ''}
                 </p>
               </div>
               <div>
                 <Label className="text-sm font-medium">Country</Label>
-                <p className="text-sm text-muted-foreground">{existingPlayer.country}</p>
+                <p className="text-sm text-muted-foreground">{existingPlayer?.country}</p>
               </div>
               <div>
                 <Label className="text-sm font-medium">Role</Label>
-                <p className="text-sm text-muted-foreground">{existingPlayer.role}</p>
+                <p className="text-sm text-muted-foreground">{existingPlayer?.role}</p>
               </div>
               <div>
                 <Label className="text-sm font-medium">Career Start</Label>
                 <p className="text-sm text-muted-foreground">
-                  {new Date(existingPlayer.careerStart).toLocaleDateString()}
+                  {existingPlayer?.careerStart ? new Date(existingPlayer.careerStart).toLocaleDateString() : ''}
                 </p>
               </div>
             </div>
@@ -546,7 +583,7 @@ export default function DataEntryPage() {
           <h1 className="text-3xl font-bold mb-2">Cricket Data Entry</h1>
           <p className="text-muted-foreground">
             {existingPlayer 
-              ? `Managing data for ${existingPlayer.fullName}` 
+              ? `Managing data for ${existingPlayer?.fullName}` 
               : 'Enter player information, match details, and performance statistics'
             }
           </p>
@@ -559,7 +596,7 @@ export default function DataEntryPage() {
           )}
         </div>
         
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'player' | 'match' | 'performance')} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="player">Player Info</TabsTrigger>
             <TabsTrigger value="match">Match Details</TabsTrigger>
@@ -587,7 +624,7 @@ export default function DataEntryPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label>Level *</Label>
-                      <Select onValueChange={(value) => matchForm.setValue('level', value as any)}>
+                      <Select onValueChange={(value) => matchForm.setValue('level', value as 'school' | 'domestic' | 'Ranji' | 'IPL' | 'international')}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select level" />
                         </SelectTrigger>
@@ -606,7 +643,7 @@ export default function DataEntryPage() {
 
                     <div className="space-y-2">
                       <Label>Format *</Label>
-                      <Select onValueChange={(value) => matchForm.setValue('format', value as any)}>
+                      <Select onValueChange={(value) => matchForm.setValue('format', value as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic')}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select format" />
                         </SelectTrigger>

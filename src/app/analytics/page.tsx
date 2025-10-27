@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -36,11 +36,31 @@ interface AnalyticsData {
   bowlingAverage: number;
   strikeRate: number;
   economy: number;
-  formatStats: any[];
-  levelStats: any[];
-  performanceOverTime: any[];
-  venueStats: any[];
-  opponentStats: any[];
+  formatStats: Array<{
+    _id: string;
+    matches: number;
+    totalRuns: number;
+    totalWickets: number;
+    avgRuns: number;
+  }>;
+  levelStats: Array<{
+    _id: string;
+    matches: number;
+  }>;
+  performanceOverTime: Array<{
+    date: string;
+    runs: number;
+    strikeRate: number;
+  }>;
+  venueStats: Array<{
+    _id: string;
+    avgRuns: number;
+  }>;
+  opponentStats: Array<{
+    _id: string;
+    matches: number;
+    avgRuns: number;
+  }>;
 }
 
 export default function AnalyticsPage() {
@@ -49,11 +69,7 @@ export default function AnalyticsPage() {
   const [selectedFormat, setSelectedFormat] = useState<string>('all');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
 
-  useEffect(() => {
-    fetchAnalyticsData();
-  }, [selectedFormat, selectedLevel]);
-
-  const fetchAnalyticsData = async () => {
+  const fetchAnalyticsData = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       if (selectedFormat !== 'all') params.append('format', selectedFormat);
@@ -62,12 +78,16 @@ export default function AnalyticsPage() {
       const response = await fetch(`/api/analytics?${params}`);
       const analyticsData = await response.json();
       setData(analyticsData);
-    } catch (error) {
-      console.error('Error fetching analytics:', error);
+    } catch {
+      console.error('Error fetching analytics');
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedFormat, selectedLevel]);
+
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [selectedFormat, selectedLevel, fetchAnalyticsData]);
 
   if (loading) {
     return (

@@ -63,7 +63,7 @@ export async function PUT(request: NextRequest) {
     
     // Only allow updates to specific fields (minor changes)
     const allowedUpdates = ['currentTeam', 'careerEnd', 'teams'];
-    const updates: any = {};
+    const updates: Record<string, unknown> = {};
     
     Object.keys(updateData).forEach(key => {
       if (allowedUpdates.includes(key)) {
@@ -71,7 +71,7 @@ export async function PUT(request: NextRequest) {
       }
     });
     
-    if (updates.careerEnd) {
+    if (updates.careerEnd && typeof updates.careerEnd === 'string') {
       updates.careerEnd = new Date(updates.careerEnd);
     }
     

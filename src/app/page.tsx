@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Plus, TrendingUp, Target, Activity, Award } from "lucide-react";
+import { BarChart3, Plus, TrendingUp, Target, Activity } from "lucide-react";
 
 export default function Home() {
   return (
