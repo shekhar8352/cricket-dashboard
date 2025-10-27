@@ -7,3 +7,4 @@ export { default as VenueStats } from "./VenueStats.model";
 export { default as SeasonStats } from "./SeasonStats.model";
 export { default as Milestone } from "./Milestone.model";
 export { default as Timeline } from "./Timeline.model";
+export { default as Player } from "./Player.model";
