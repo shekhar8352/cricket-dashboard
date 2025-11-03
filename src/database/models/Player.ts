@@ -49,7 +49,7 @@ const PlayerSchema = new Schema<IPlayer>(
     teams: [
       {
         name: String,
-        level: { type: String, enum: ["under19-international", "domestic", "Ranji", "IPL", "List-A", "international"] },
+        level: { type: String, enum: ["under19-international", "domestic", "Ranji", "IPL", "List-A", "international", "school", "club", "university"] },
         from: Date,
         to: Date,
       },

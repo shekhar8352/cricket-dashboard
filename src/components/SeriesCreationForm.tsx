@@ -76,6 +76,8 @@ export default function SeriesCreationForm() {
   const [selectedPreset, setSelectedPreset] = useState<string>('');
   const [showDidNotPlay, setShowDidNotPlay] = useState<{ [key: number]: boolean }>({});
   const [currentPlayer, setCurrentPlayer] = useState<{ _id: string; fullName: string } | null>(null);
+  const [teamSuggestions, setTeamSuggestions] = useState<string[]>([]);
+  const [updatingTeam, setUpdatingTeam] = useState(false);
 
 
   const seriesForm = useForm<SeriesFormData>({
@@ -239,6 +241,10 @@ export default function SeriesCreationForm() {
     seriesForm.setValue('format', preset.format);
     seriesForm.setValue('level', preset.level);
     seriesForm.setValue('description', preset.description);
+    
+    // Update team suggestions based on preset level
+    const suggestions = getTeamSuggestions(preset.level, preset.format);
+    setTeamSuggestions(suggestions);
 
     // Apply teams
     const teams = preset.teams.map((teamName, index) => ({
@@ -257,6 +263,9 @@ export default function SeriesCreationForm() {
         team.includes('Chennai')
       ) || preset.teams[0];
       seriesForm.setValue('playerTeam', playerTeam);
+      
+      // Update player's team in database
+      updatePlayerTeam(playerTeam, preset.level);
     }
 
     // Generate matches based on preset structure
@@ -300,6 +309,76 @@ export default function SeriesCreationForm() {
       ...prev,
       [matchIndex]: !prev[matchIndex]
     }));
+  };
+
+  const updatePlayerTeam = async (teamName: string, teamLevel: string, startDate?: string) => {
+    if (!teamName || !currentPlayer) return;
+
+    setUpdatingTeam(true);
+    try {
+      const response = await fetch('/api/players/update-team', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teamName,
+          teamLevel,
+          startDate: startDate || seriesForm.getValues('startDate')
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        console.log('Player team updated successfully:', data.message);
+      } else {
+        console.error('Failed to update player team:', data.error);
+      }
+    } catch (error) {
+      console.error('Error updating player team:', error);
+    }
+    setUpdatingTeam(false);
+  };
+
+  const getTeamSuggestions = (level: string, format: string) => {
+    const suggestions: string[] = [];
+    
+    switch (level) {
+      case 'international':
+        suggestions.push('India', 'Australia', 'England', 'South Africa', 'New Zealand', 'Pakistan', 'Sri Lanka', 'Bangladesh', 'West Indies', 'Afghanistan');
+        break;
+      case 'IPL':
+        suggestions.push('Mumbai Indians', 'Chennai Super Kings', 'Royal Challengers Bangalore', 'Kolkata Knight Riders', 'Delhi Capitals', 'Rajasthan Royals', 'Punjab Kings', 'Sunrisers Hyderabad', 'Gujarat Titans', 'Lucknow Super Giants');
+        break;
+      case 'Ranji':
+      case 'domestic':
+        suggestions.push('Mumbai', 'Delhi', 'Karnataka', 'Tamil Nadu', 'Gujarat', 'Rajasthan', 'Maharashtra', 'Punjab', 'Haryana', 'Uttar Pradesh', 'Madhya Pradesh', 'Bengal', 'Odisha', 'Kerala', 'Andhra Pradesh', 'Telangana', 'Services', 'Railways');
+        break;
+      case 'List-A':
+        suggestions.push('Mumbai', 'Delhi', 'Karnataka', 'Tamil Nadu', 'Gujarat', 'Rajasthan', 'Maharashtra', 'Punjab', 'Haryana', 'Uttar Pradesh', 'Madhya Pradesh', 'Bengal', 'Odisha', 'Kerala', 'Andhra Pradesh', 'Telangana');
+        break;
+      case 'under19-international':
+        suggestions.push('India U19', 'Australia U19', 'England U19', 'South Africa U19', 'Pakistan U19', 'Sri Lanka U19', 'Bangladesh U19', 'West Indies U19');
+        break;
+      default:
+        suggestions.push('India', 'Mumbai', 'Delhi', 'Karnataka', 'Chennai Super Kings', 'Mumbai Indians');
+    }
+    
+    return suggestions;
+  };
+
+  // Update team suggestions when level changes
+  const handleLevelChange = (level: string) => {
+    seriesForm.setValue('level', level as any);
+    const format = seriesForm.getValues('format') || 'ODI';
+    const suggestions = getTeamSuggestions(level, format);
+    setTeamSuggestions(suggestions);
+  };
+
+  const handlePlayerTeamChange = (teamName: string) => {
+    seriesForm.setValue('playerTeam', teamName);
+    const level = seriesForm.getValues('level');
+    if (level && teamName) {
+      updatePlayerTeam(teamName, level);
+    }
   };
 
   const addTeam = () => {
@@ -566,7 +645,7 @@ export default function SeriesCreationForm() {
 
                     <div className="space-y-2">
                       <Label>Level *</Label>
-                      <Select onValueChange={(value) => seriesForm.setValue('level', value as 'under19-international' | 'domestic' | 'Ranji' | 'IPL' | 'List-A' | 'international')}>
+                      <Select onValueChange={handleLevelChange}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select level" />
                         </SelectTrigger>
@@ -659,12 +738,31 @@ export default function SeriesCreationForm() {
                   <div className="p-4 bg-muted/50 rounded-lg">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="playerTeam">Playing For Team *</Label>
-                        <Input
-                          id="playerTeam"
-                          {...seriesForm.register('playerTeam')}
-                          placeholder="e.g., India, Mumbai Indians, Karnataka"
-                        />
+                        <Label>Playing For Team *</Label>
+                        <Select onValueChange={handlePlayerTeamChange} disabled={updatingTeam}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select team (choose level first)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {teamSuggestions.length > 0 ? (
+                              teamSuggestions.map((team) => (
+                                <SelectItem key={team} value={team}>
+                                  {team}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="custom" disabled>
+                                Select level first to see team options
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                        {updatingTeam && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-2">
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
+                            Updating player team...
+                          </p>
+                        )}
                         {seriesForm.formState.errors.playerTeam && (
                           <p className="text-destructive text-sm">{seriesForm.formState.errors.playerTeam.message}</p>
                         )}
