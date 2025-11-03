@@ -128,6 +128,30 @@ export default function BattingAnalytics() {
     return <div className="text-center p-8">No batting data available</div>;
   }
 
+  // Provide default values for potentially undefined nested objects
+  const safeConversionRates = battingData.conversionRates || {
+    startToThirty: 0,
+    thirtyToFifty: 0,
+    fiftyToHundred: 0
+  };
+
+  const safeSituationalStats = battingData.situationalStats || {
+    firstInnings: { matches: 0, runs: 0, average: 0, strikeRate: 0 },
+    chasing: { matches: 0, runs: 0, average: 0, strikeRate: 0, successRate: 0 },
+    pressure: { matches: 0, runs: 0, average: 0, strikeRate: 0 }
+  };
+
+  const safeHomeAwayStats = battingData.homeAwayStats || {
+    home: { matches: 0, runs: 0, average: 0, strikeRate: 0, hundreds: 0, fifties: 0 },
+    away: { matches: 0, runs: 0, average: 0, strikeRate: 0, hundreds: 0, fifties: 0 }
+  };
+
+  // Safe arrays with defaults
+  const safeFormatStats = battingData.formatStats || [];
+  const safePositionStats = battingData.positionStats || [];
+  const safeDismissalTypes = battingData.dismissalTypes || {};
+  const safeVsOpposition = battingData.vsOpposition || [];
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue="formats" className="w-full">
@@ -163,7 +187,7 @@ export default function BattingAnalytics() {
                     </tr>
                   </thead>
                   <tbody>
-                    {battingData.formatStats.map((format, index) => (
+                    {safeFormatStats.map((format, index) => (
                       <tr key={index} className="border-b">
                         <td className="p-2 font-medium">{format.format}</td>
                         <td className="text-right p-2">{format.matches}</td>
@@ -205,7 +229,7 @@ export default function BattingAnalytics() {
                     </tr>
                   </thead>
                   <tbody>
-                    {battingData.positionStats.map((pos, index) => (
+                    {safePositionStats.map((pos, index) => (
                       <tr key={index} className="border-b">
                         <td className="p-2 font-medium">#{pos.position}</td>
                         <td className="text-right p-2">{pos.innings}</td>
@@ -231,7 +255,7 @@ export default function BattingAnalytics() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {Object.entries(battingData.dismissalTypes).map(([type, count]) => (
+                  {Object.entries(safeDismissalTypes).map(([type, count]) => (
                     <div key={type} className="flex justify-between">
                       <span className="capitalize">{type.replace(/([A-Z])/g, ' $1')}</span>
                       <span className="font-bold">{count}</span>
@@ -249,15 +273,15 @@ export default function BattingAnalytics() {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span>Start to 30:</span>
-                    <span className="font-bold">{battingData.conversionRates.startToThirty?.toFixed(1)}%</span>
+                    <span className="font-bold">{safeConversionRates.startToThirty.toFixed(1)}%</span>
                   </div>
                   <div className="flex justify-between">
                     <span>30 to 50:</span>
-                    <span className="font-bold">{battingData.conversionRates.thirtyToFifty?.toFixed(1)}%</span>
+                    <span className="font-bold">{safeConversionRates.thirtyToFifty.toFixed(1)}%</span>
                   </div>
                   <div className="flex justify-between">
                     <span>50 to 100:</span>
-                    <span className="font-bold">{battingData.conversionRates.fiftyToHundred?.toFixed(1)}%</span>
+                    <span className="font-bold">{safeConversionRates.fiftyToHundred.toFixed(1)}%</span>
                   </div>
                 </div>
               </CardContent>
@@ -275,19 +299,19 @@ export default function BattingAnalytics() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Matches:</span>
-                    <span className="font-bold">{battingData.situationalStats.firstInnings.matches}</span>
+                    <span className="font-bold">{safeSituationalStats.firstInnings.matches}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Runs:</span>
-                    <span className="font-bold">{battingData.situationalStats.firstInnings.runs.toLocaleString()}</span>
+                    <span className="font-bold">{safeSituationalStats.firstInnings.runs.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Average:</span>
-                    <span className="font-bold">{battingData.situationalStats.firstInnings.average.toFixed(2)}</span>
+                    <span className="font-bold">{safeSituationalStats.firstInnings.average.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Strike Rate:</span>
-                    <span className="font-bold">{battingData.situationalStats.firstInnings.strikeRate.toFixed(1)}</span>
+                    <span className="font-bold">{safeSituationalStats.firstInnings.strikeRate.toFixed(1)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -301,19 +325,19 @@ export default function BattingAnalytics() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Matches:</span>
-                    <span className="font-bold">{battingData.situationalStats.chasing.matches}</span>
+                    <span className="font-bold">{safeSituationalStats.chasing.matches}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Runs:</span>
-                    <span className="font-bold">{battingData.situationalStats.chasing.runs.toLocaleString()}</span>
+                    <span className="font-bold">{safeSituationalStats.chasing.runs.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Average:</span>
-                    <span className="font-bold">{battingData.situationalStats.chasing.average.toFixed(2)}</span>
+                    <span className="font-bold">{safeSituationalStats.chasing.average.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Success Rate:</span>
-                    <span className="font-bold">{battingData.situationalStats.chasing.successRate.toFixed(1)}%</span>
+                    <span className="font-bold">{safeSituationalStats.chasing.successRate.toFixed(1)}%</span>
                   </div>
                 </div>
               </CardContent>
@@ -327,19 +351,19 @@ export default function BattingAnalytics() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Matches:</span>
-                    <span className="font-bold">{battingData.situationalStats.pressure.matches}</span>
+                    <span className="font-bold">{safeSituationalStats.pressure.matches}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Runs:</span>
-                    <span className="font-bold">{battingData.situationalStats.pressure.runs.toLocaleString()}</span>
+                    <span className="font-bold">{safeSituationalStats.pressure.runs.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Average:</span>
-                    <span className="font-bold">{battingData.situationalStats.pressure.average.toFixed(2)}</span>
+                    <span className="font-bold">{safeSituationalStats.pressure.average.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Strike Rate:</span>
-                    <span className="font-bold">{battingData.situationalStats.pressure.strikeRate.toFixed(1)}</span>
+                    <span className="font-bold">{safeSituationalStats.pressure.strikeRate.toFixed(1)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -358,15 +382,15 @@ export default function BattingAnalytics() {
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span>Matches:</span>
-                        <span>{battingData.homeAwayStats.home.matches}</span>
+                        <span>{safeHomeAwayStats.home.matches}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Runs:</span>
-                        <span>{battingData.homeAwayStats.home.runs.toLocaleString()}</span>
+                        <span>{safeHomeAwayStats.home.runs.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Average:</span>
-                        <span>{battingData.homeAwayStats.home.average.toFixed(2)}</span>
+                        <span>{safeHomeAwayStats.home.average.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -375,15 +399,15 @@ export default function BattingAnalytics() {
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span>Matches:</span>
-                        <span>{battingData.homeAwayStats.away.matches}</span>
+                        <span>{safeHomeAwayStats.away.matches}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Runs:</span>
-                        <span>{battingData.homeAwayStats.away.runs.toLocaleString()}</span>
+                        <span>{safeHomeAwayStats.away.runs.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Average:</span>
-                        <span>{battingData.homeAwayStats.away.average.toFixed(2)}</span>
+                        <span>{safeHomeAwayStats.away.average.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -414,7 +438,7 @@ export default function BattingAnalytics() {
                     </tr>
                   </thead>
                   <tbody>
-                    {battingData.vsOpposition.map((opp, index) => (
+                    {safeVsOpposition.map((opp, index) => (
                       <tr key={index} className="border-b">
                         <td className="p-2 font-medium">{opp.opponent}</td>
                         <td className="text-right p-2">{opp.matches}</td>

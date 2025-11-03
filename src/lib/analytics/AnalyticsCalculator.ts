@@ -310,12 +310,23 @@ export class AnalyticsCalculator {
       formatStats: [],
       positionStats: [],
       dismissalTypes: { caught: 0, bowled: 0, lbw: 0, runOut: 0, stumped: 0, hitWicket: 0, notOut: 0 },
-      situationalStats: {},
+      situationalStats: {
+        firstInnings: { matches: 0, runs: 0, average: 0, strikeRate: 0 },
+        chasing: { matches: 0, runs: 0, average: 0, strikeRate: 0, successRate: 0 },
+        pressure: { matches: 0, runs: 0, average: 0, strikeRate: 0 }
+      },
       partnerships: [],
-      conversionRates: {},
+      conversionRates: {
+        startToThirty: 0,
+        thirtyToFifty: 0,
+        fiftyToHundred: 0
+      },
       vsOpposition: [],
       vsVenues: [],
-      homeAwayStats: {},
+      homeAwayStats: {
+        home: { matches: 0, runs: 0, average: 0, strikeRate: 0, hundreds: 0, fifties: 0 },
+        away: { matches: 0, runs: 0, average: 0, strikeRate: 0, hundreds: 0, fifties: 0 }
+      },
       shotAnalysis: [],
       recentForm: {},
       lastUpdated: new Date()
@@ -329,12 +340,23 @@ export class AnalyticsCalculator {
     // Implementation for detailed bowling analytics
     return {
       formatStats: [],
-      positionStats: {},
-      phaseAnalysis: {},
+      positionStats: {
+        opening: { matches: 0, overs: 0, wickets: 0, economy: 0, average: 0, strikeRate: 0 },
+        middle: { matches: 0, overs: 0, wickets: 0, economy: 0, average: 0, strikeRate: 0 },
+        death: { matches: 0, overs: 0, wickets: 0, economy: 0, average: 0, strikeRate: 0 }
+      },
+      phaseAnalysis: {
+        powerplay: { overs: 0, runs: 0, wickets: 0, economy: 0, dotBallPercentage: 0 },
+        middleOvers: { overs: 0, runs: 0, wickets: 0, economy: 0, dotBallPercentage: 0 },
+        deathOvers: { overs: 0, runs: 0, wickets: 0, economy: 0, dotBallPercentage: 0 }
+      },
       dismissalTypes: { caught: 0, bowled: 0, lbw: 0, stumped: 0, hitWicket: 0 },
       vsOpposition: [],
       vsVenues: [],
-      homeAwayStats: {},
+      homeAwayStats: {
+        home: { matches: 0, overs: 0, wickets: 0, runs: 0, average: 0, economy: 0, strikeRate: 0 },
+        away: { matches: 0, overs: 0, wickets: 0, runs: 0, average: 0, economy: 0, strikeRate: 0 }
+      },
       deliveryAnalysis: {},
       situationalStats: {},
       wicketDistribution: [],
@@ -371,16 +393,51 @@ export class AnalyticsCalculator {
   private static processAdvancedMetrics(performances: any[]): any {
     // Implementation for advanced metrics calculation
     return {
-      consistencyIndex: {},
-      impactIndex: {},
-      clutchScore: {},
-      playerValueIndex: {},
-      formCurve: {},
-      matchImpact: {},
-      situationalMetrics: {},
+      consistencyIndex: {
+        batting: 0,
+        bowling: 0,
+        overall: 0,
+        calculation: { battingVariance: 0, bowlingVariance: 0, matchCount: 0 }
+      },
+      impactIndex: { batting: 0, bowling: 0, fielding: 0, overall: 0 },
+      clutchScore: { batting: 0, bowling: 0, overall: 0, pressureMatches: 0 },
+      playerValueIndex: { total: 0, battingContribution: 0, bowlingContribution: 0, fieldingContribution: 0 },
+      formCurve: {
+        current: 0,
+        trend: "stable" as const,
+        last5Average: 0,
+        last10Average: 0,
+        careerAverage: 0,
+        peakForm: { rating: 0, period: "", matches: 0 }
+      },
+      matchImpact: {
+        winContribution: 0,
+        matchWinningPerformances: 0,
+        matchLosingPerformances: 0,
+        drawSavingPerformances: 0,
+        averageImpactScore: 0,
+        highImpactMatches: []
+      },
+      situationalMetrics: {
+        homeAdvantage: { homePerformance: 0, awayPerformance: 0, advantage: 0 },
+        formatAdaptability: { testRating: 0, odiRating: 0, t20Rating: 0, adaptabilityScore: 0 },
+        oppositionStrength: { vsStrongTeams: 0, vsWeakTeams: 0, strengthIndex: 0 },
+        matchPhase: { earlyCareer: 0, midCareer: 0, lateCareer: 0, careerProgression: 0 }
+      },
       peerComparison: {},
-      predictiveMetrics: {},
-      milestonePredictions: {},
+      predictiveMetrics: {
+        formMomentum: 0,
+        injuryRisk: 0,
+        careerTrajectory: "stable" as const,
+        expectedPerformance: {
+          nextMatch: { battingScore: 0, bowlingScore: 0, confidence: 0 },
+          next5Matches: { averageBattingScore: 0, averageBowlingScore: 0, confidence: 0 }
+        }
+      },
+      milestonePredictions: {
+        nextMilestone: { type: "", target: 0, current: 0, estimatedMatches: 0, probability: 0 },
+        careerProjections: { totalRuns: 0, totalWickets: 0, totalMatches: 0, confidence: 0 }
+      },
       lastCalculated: new Date(),
       calculationVersion: "1.0"
     };

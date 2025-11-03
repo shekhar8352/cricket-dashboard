@@ -12,6 +12,27 @@ export interface IPlayer extends Document {
   currentTeam?: string;
   teams: { name: string; level: string; from: Date; to?: Date }[];
   isActive: boolean;
+  
+  // Additional player details for analytics
+  height?: number; // in cm
+  weight?: number; // in kg
+  birthPlace?: string;
+  nickname?: string;
+  education?: string;
+  debut?: {
+    international?: { Test?: Date; ODI?: Date; T20?: Date };
+    domestic?: { firstClass?: Date; listA?: Date; t20?: Date };
+    ipl?: Date;
+  };
+  
+  // Career statistics summary (calculated fields)
+  careerStats?: {
+    matches: number;
+    runs: number;
+    wickets: number;
+    catches: number;
+    lastUpdated: Date;
+  };
 }
 
 const PlayerSchema = new Schema<IPlayer>(
@@ -28,12 +49,41 @@ const PlayerSchema = new Schema<IPlayer>(
     teams: [
       {
         name: String,
-        level: { type: String, enum: ["school", "domestic", "Ranji", "IPL", "international"] },
+        level: { type: String, enum: ["under19-international", "domestic", "Ranji", "IPL", "List-A", "international"] },
         from: Date,
         to: Date,
       },
     ],
     isActive: { type: Boolean, default: true },
+    
+    // Additional player details
+    height: Number,
+    weight: Number,
+    birthPlace: String,
+    nickname: String,
+    education: String,
+    debut: {
+      international: {
+        Test: Date,
+        ODI: Date,
+        T20: Date,
+      },
+      domestic: {
+        firstClass: Date,
+        listA: Date,
+        t20: Date,
+      },
+      ipl: Date,
+    },
+    
+    // Career statistics summary
+    careerStats: {
+      matches: { type: Number, default: 0 },
+      runs: { type: Number, default: 0 },
+      wickets: { type: Number, default: 0 },
+      catches: { type: Number, default: 0 },
+      lastUpdated: Date,
+    },
   },
   { timestamps: true }
 );

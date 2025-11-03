@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import CareerOverview from './CareerOverview';
 import BattingAnalytics from './BattingAnalytics';
+import BowlingAnalytics from './BowlingAnalytics';
+import FieldingAnalytics from './FieldingAnalytics';
+import AdvancedMetrics from './AdvancedMetrics';
+import ComparisonAnalytics from './ComparisonAnalytics';
 import { RefreshCw } from 'lucide-react';
 
 export default function AnalyticsDashboard() {
@@ -65,67 +69,19 @@ export default function AnalyticsDashboard() {
         </TabsContent>
 
         <TabsContent value="bowling" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Bowling Analytics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Bowling analytics component coming soon...</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Will include format-wise stats, phase analysis, dismissal types, venue performance, and more.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <BowlingAnalytics />
         </TabsContent>
 
         <TabsContent value="fielding" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Fielding Analytics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Fielding analytics component coming soon...</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Will include catches, run-outs, stumpings, position analysis, and success rates.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <FieldingAnalytics />
         </TabsContent>
 
         <TabsContent value="advanced" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Advanced Metrics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Advanced metrics component coming soon...</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Will include consistency index, impact index, clutch score, form curve, and predictive metrics.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <AdvancedMetrics />
         </TabsContent>
 
         <TabsContent value="comparison" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance Comparison</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Comparison analytics component coming soon...</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Will include format comparisons, home vs away, opposition analysis, and trend analysis.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <ComparisonAnalytics />
         </TabsContent>
       </Tabs>
 
