@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MatchTable from "@/components/MatchTable";
 import MatchSummary from "@/components/MatchSummary";
+import SeriesCreationForm from "@/components/SeriesCreationForm";
 
 // Form validation schemas
 const playerSchema = z.object({
@@ -150,7 +151,7 @@ type MatchFormData = z.infer<typeof matchSchema>;
 type PerformanceFormData = z.infer<typeof performanceSchema>;
 
 export default function DataEntryPage() {
-  const [activeTab, setActiveTab] = useState<'player' | 'match' | 'performance'>('player');
+  const [activeTab, setActiveTab] = useState<'player' | 'match' | 'performance' | 'series'>('player');
   const [matches, setMatches] = useState<Array<{
     _id: string;
     opponent: string;
@@ -812,10 +813,11 @@ export default function DataEntryPage() {
           )}
         </div>
         
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'player' | 'match' | 'performance')} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'player' | 'match' | 'performance' | 'series')} className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="player">Player Info</TabsTrigger>
             <TabsTrigger value="match">Match Details</TabsTrigger>
+            <TabsTrigger value="series">Series/Tournament</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
           </TabsList>
 
@@ -1210,6 +1212,10 @@ export default function DataEntryPage() {
               onRefresh={handleRefreshMatches}
             />
             </div>
+          </TabsContent>
+
+          <TabsContent value="series">
+            <SeriesCreationForm />
           </TabsContent>
 
           <TabsContent value="performance">

@@ -11,6 +11,7 @@ export default function Navigation() {
   const navItems = [
     { href: '/', label: 'Home' },
     { href: '/data-entry', label: 'Data Entry' },
+    { href: '/series-management', label: 'Series Management' },
     { href: '/analytics', label: 'Analytics' },
   ];
 
