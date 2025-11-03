@@ -45,18 +45,7 @@ const seriesSchema = z.object({
   })).min(1, 'At least 1 match is required')
 });
 
-const venueSchema = z.object({
-  name: z.string().min(1, 'Venue name is required'),
-  city: z.string().min(1, 'City is required'),
-  country: z.string().min(1, 'Country is required'),
-  capacity: z.number().optional(),
-  pitchType: z.enum(['batting', 'bowling', 'balanced']).optional(),
-  floodlights: z.boolean(),
-  roofed: z.boolean(),
-});
-
 type SeriesFormData = z.infer<typeof seriesSchema>;
-type VenueFormData = z.infer<typeof venueSchema>;
 
 interface Venue {
   _id: string;
@@ -64,12 +53,14 @@ interface Venue {
   city: string;
   country: string;
   capacity?: number;
+  pitchType?: string;
 }
 
 export default function SeriesCreationForm() {
-  const [activeTab, setActiveTab] = useState<'series' | 'venue'>('series');
+  const [activeTab, setActiveTab] = useState<'series' | 'venues'>('series');
   const [loading, setLoading] = useState(false);
   const [venues, setVenues] = useState<Venue[]>([]);
+  const [seeding, setSeeding] = useState(false);
 
 
   const seriesForm = useForm<SeriesFormData>({
@@ -89,13 +80,7 @@ export default function SeriesCreationForm() {
     }
   });
 
-  const venueForm = useForm<VenueFormData>({
-    resolver: zodResolver(venueSchema),
-    defaultValues: {
-      floodlights: false,
-      roofed: false,
-    }
-  });
+
 
   const { fields: teamFields, append: appendTeam, remove: removeTeam } = useFieldArray({
     control: seriesForm.control,
@@ -167,28 +152,25 @@ export default function SeriesCreationForm() {
     setLoading(false);
   };
 
-  const onSubmitVenue = async (data: VenueFormData) => {
-    setLoading(true);
+  const seedVenues = async () => {
+    setSeeding(true);
     try {
-      const response = await fetch('/api/venues', {
+      const response = await fetch('/api/venues/seed', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
       });
 
+      const data = await response.json();
       if (response.ok) {
-        alert('Venue created successfully!');
-        venueForm.reset();
+        alert(`Successfully seeded ${data.count} cricket venues from around the world!`);
         fetchVenues(); // Refresh venues list
       } else {
-        const errorData = await response.json();
-        alert(errorData.error || 'Error creating venue');
+        alert(data.error || 'Error seeding venues');
       }
     } catch (error) {
-      console.error('Error creating venue:', error);
-      alert('Error creating venue');
+      console.error('Error seeding venues:', error);
+      alert('Error seeding venues');
     }
-    setLoading(false);
+    setSeeding(false);
   };
 
   const addTeam = () => {
@@ -308,15 +290,15 @@ export default function SeriesCreationForm() {
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'series' | 'venue')} className="w-full">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'series' | 'venues')} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="series" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             Create Series/Tournament
           </TabsTrigger>
-          <TabsTrigger value="venue" className="flex items-center gap-2">
+          <TabsTrigger value="venues" className="flex items-center gap-2">
             <MapPin className="w-4 h-4" />
-            Add Venue
+            World Cricket Venues
           </TabsTrigger>
         </TabsList>
 
@@ -603,138 +585,67 @@ export default function SeriesCreationForm() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="venue">
+        <TabsContent value="venues">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="w-5 h-5" />
-                Add New Venue
+                World Cricket Venues
               </CardTitle>
               <CardDescription>
-                Add a new cricket venue with details about facilities and characteristics
+                Load famous cricket venues from around the world into your database
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={venueForm.handleSubmit(onSubmitVenue)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="venueName">Venue Name *</Label>
-                    <Input
-                      id="venueName"
-                      {...venueForm.register('name')}
-                      placeholder="e.g., Eden Gardens"
-                    />
-                    {venueForm.formState.errors.name && (
-                      <p className="text-destructive text-sm">{venueForm.formState.errors.name.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="venueCity">City *</Label>
-                    <Input
-                      id="venueCity"
-                      {...venueForm.register('city')}
-                      placeholder="e.g., Kolkata"
-                    />
-                    {venueForm.formState.errors.city && (
-                      <p className="text-destructive text-sm">{venueForm.formState.errors.city.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="venueCountry">Country *</Label>
-                    <Input
-                      id="venueCountry"
-                      {...venueForm.register('country')}
-                      placeholder="e.g., India"
-                    />
-                    {venueForm.formState.errors.country && (
-                      <p className="text-destructive text-sm">{venueForm.formState.errors.country.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="capacity">Capacity</Label>
-                    <Input
-                      id="capacity"
-                      type="number"
-                      {...venueForm.register('capacity', { valueAsNumber: true })}
-                      placeholder="e.g., 68000"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Pitch Type</Label>
-                    <Select onValueChange={(value) => venueForm.setValue('pitchType', value as 'batting' | 'bowling' | 'balanced')}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select pitch type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="batting">Batting Friendly</SelectItem>
-                        <SelectItem value="bowling">Bowling Friendly</SelectItem>
-                        <SelectItem value="balanced">Balanced</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="floodlights"
-                        {...venueForm.register('floodlights')}
-                        className="rounded"
-                      />
-                      <Label htmlFor="floodlights">Has Floodlights</Label>
+            <CardContent className="space-y-6">
+              {venues.length === 0 ? (
+                <div className="text-center py-8">
+                  <MapPin className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No venues loaded</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Load world-famous cricket venues including Lord's, MCG, Eden Gardens, and many more
+                  </p>
+                  <Button onClick={seedVenues} disabled={seeding} size="lg">
+                    {seeding ? 'Loading Venues...' : 'Load World Cricket Venues'}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium">Available Venues</h3>
+                      <p className="text-muted-foreground">
+                        {venues.length} cricket venue{venues.length !== 1 ? 's' : ''} from around the world
+                      </p>
                     </div>
-
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="roofed"
-                        {...venueForm.register('roofed')}
-                        className="rounded"
-                      />
-                      <Label htmlFor="roofed">Roofed Stadium</Label>
-                    </div>
+                    <Button onClick={seedVenues} disabled={seeding} variant="outline">
+                      {seeding ? 'Reloading...' : 'Reload Venues'}
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {venues.map((venue) => (
+                      <div key={venue._id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                        <h4 className="font-medium text-lg">{venue.name}</h4>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {venue.city}, {venue.country}
+                        </p>
+                        {venue.capacity && (
+                          <p className="text-sm text-muted-foreground">
+                            Capacity: {venue.capacity.toLocaleString()}
+                          </p>
+                        )}
+                        {venue.pitchType && (
+                          <p className="text-sm text-muted-foreground capitalize">
+                            Pitch: {venue.pitchType} friendly
+                          </p>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                <Button type="submit" disabled={loading} className="w-full">
-                  {loading ? 'Adding Venue...' : 'Add Venue'}
-                </Button>
-              </form>
+              )}
             </CardContent>
           </Card>
-
-          {/* Existing Venues List */}
-          {venues.length > 0 && (
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Existing Venues</CardTitle>
-                <CardDescription>
-                  {venues.length} venue{venues.length !== 1 ? 's' : ''} available
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {venues.map((venue) => (
-                    <div key={venue._id} className="p-4 border rounded-lg">
-                      <h4 className="font-medium">{venue.name}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {venue.city}, {venue.country}
-                      </p>
-                      {venue.capacity && (
-                        <p className="text-sm text-muted-foreground">
-                          Capacity: {venue.capacity.toLocaleString()}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
       </Tabs>
     </div>
