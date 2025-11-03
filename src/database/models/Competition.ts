@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface ICompetition extends Document {
   name: string; // e.g. "ICC World Cup 2011", "India vs Australia Test Series 2008"
   type: "tournament" | "bilateral" | "domestic"; 
-  level: "school" | "domestic" | "Ranji" | "IPL" | "international";
+  level: "under19-international" | "domestic" | "Ranji" | "IPL" | "List-A" | "international";
   format: "Test" | "ODI" | "T20" | "First-class" | "List-A" | "T20-domestic";
   season?: string; // e.g. "2008/09", "2011"
   startDate: Date;
@@ -31,7 +31,7 @@ const CompetitionSchema = new Schema<ICompetition>(
   {
     name: { type: String, required: true },
     type: { type: String, enum: ["tournament", "bilateral", "domestic"], required: true },
-    level: { type: String, enum: ["school", "domestic", "Ranji", "IPL", "international"], required: true },
+    level: { type: String, enum: ["under19-international", "domestic", "Ranji", "IPL", "List-A", "international"], required: true },
     format: { type: String, enum: ["Test", "ODI", "T20", "First-class", "List-A", "T20-domestic"], required: true },
     season: String,
     startDate: { type: Date, required: true },

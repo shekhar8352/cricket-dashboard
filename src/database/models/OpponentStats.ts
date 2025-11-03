@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IOpponentStats extends Document {
   opponent: string; // e.g. "Australia"
-  level: "school" | "domestic" | "Ranji" | "IPL" | "international";
+  level: "under19-international" | "domestic" | "Ranji" | "IPL" | "List-A" | "international";
   format: "Test" | "ODI" | "T20" | "First-class" | "List-A" | "T20-domestic";
 
   matches: number;
@@ -21,7 +21,7 @@ export interface IOpponentStats extends Document {
 const OpponentStatsSchema = new Schema<IOpponentStats>(
   {
     opponent: { type: String, required: true },
-    level: { type: String, enum: ["school", "domestic", "Ranji", "IPL", "international"], required: true },
+    level: { type: String, enum: ["under19-international", "domestic", "Ranji", "IPL", "List-A", "international"], required: true },
     format: { type: String, enum: ["Test", "ODI", "T20", "First-class", "List-A", "T20-domestic"], required: true },
 
     matches: { type: Number, default: 0 },

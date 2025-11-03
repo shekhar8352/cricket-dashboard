@@ -8,72 +8,94 @@ export async function POST(request: NextRequest) {
     
     const body = await request.json();
     
-    // Calculate derived stats
-    const performance: {
-      match: string;
-      runs?: number;
-      ballsFaced?: number;
-      fours?: number;
-      sixes?: number;
-      strikeRate?: number;
-      dismissal?: {
-        type: string;
-        bowler?: string;
-        fielder?: string;
-      };
-      overs?: number;
-      maidens?: number;
-      runsConceded?: number;
-      wickets?: number;
-      economy?: number;
-      catches?: number;
-      stumpings?: number;
-      runOuts?: number;
-    } = {
+    // Build comprehensive performance object
+    const performance: any = {
       match: body.matchId,
     };
 
-    // Add batting stats if provided
-    if (body.runs !== undefined || body.ballsFaced !== undefined) {
-      performance.runs = body.runs || 0;
-      performance.ballsFaced = body.ballsFaced || 0;
-      performance.fours = body.fours || 0;
-      performance.sixes = body.sixes || 0;
-      
-      // Calculate strike rate
-      if (performance.ballsFaced && performance.ballsFaced > 0 && performance.runs !== undefined) {
-        performance.strikeRate = (performance.runs / performance.ballsFaced) * 100;
-      }
-      
-      // Add dismissal info if provided
-      if (body.dismissalType) {
-        performance.dismissal = {
-          type: body.dismissalType,
-          bowler: body.dismissalBowler,
-          fielder: body.dismissalFielder,
-        };
-      }
+    // Match context
+    if (body.battingPosition !== undefined) performance.battingPosition = body.battingPosition;
+    if (body.bowlingPosition !== undefined) performance.bowlingPosition = body.bowlingPosition;
+    if (body.innings !== undefined) performance.innings = body.innings;
+    if (body.isChasing !== undefined) performance.isChasing = body.isChasing;
+    if (body.target !== undefined) performance.target = body.target;
+    if (body.requiredRunRate !== undefined) performance.requiredRunRate = body.requiredRunRate;
+    if (body.isCaptain !== undefined) performance.isCaptain = body.isCaptain;
+    if (body.isWicketKeeper !== undefined) performance.isWicketKeeper = body.isWicketKeeper;
+    if (body.fieldingPosition !== undefined) performance.fieldingPosition = body.fieldingPosition;
+
+    // Batting performance
+    if (body.runs !== undefined) performance.runs = body.runs;
+    if (body.ballsFaced !== undefined) performance.ballsFaced = body.ballsFaced;
+    if (body.fours !== undefined) performance.fours = body.fours;
+    if (body.sixes !== undefined) performance.sixes = body.sixes;
+    if (body.singles !== undefined) performance.singles = body.singles;
+    if (body.twos !== undefined) performance.twos = body.twos;
+    if (body.threes !== undefined) performance.threes = body.threes;
+    if (body.dotBalls !== undefined) performance.dotBalls = body.dotBalls;
+
+    // Batting phases
+    if (body.powerplayRuns !== undefined) performance.powerplayRuns = body.powerplayRuns;
+    if (body.powerplayBalls !== undefined) performance.powerplayBalls = body.powerplayBalls;
+    if (body.middleOversRuns !== undefined) performance.middleOversRuns = body.middleOversRuns;
+    if (body.middleOversBalls !== undefined) performance.middleOversBalls = body.middleOversBalls;
+    if (body.deathOversRuns !== undefined) performance.deathOversRuns = body.deathOversRuns;
+    if (body.deathOversBalls !== undefined) performance.deathOversBalls = body.deathOversBalls;
+
+    // Calculate strike rate
+    if (performance.ballsFaced && performance.ballsFaced > 0 && performance.runs !== undefined) {
+      performance.strikeRate = (performance.runs / performance.ballsFaced) * 100;
     }
 
-    // Add bowling stats if provided
-    if (body.overs !== undefined || body.wickets !== undefined) {
-      performance.overs = body.overs || 0;
-      performance.maidens = body.maidens || 0;
-      performance.runsConceded = body.runsConceded || 0;
-      performance.wickets = body.wickets || 0;
-      
-      // Calculate economy rate
-      if (performance.overs && performance.overs > 0 && performance.runsConceded !== undefined) {
+    // Dismissal details
+    if (body.dismissalType || body.dismissalBowler || body.dismissalFielder) {
+      performance.dismissal = {
+        type: body.dismissalType,
+        bowler: body.dismissalBowler,
+        fielder: body.dismissalFielder,
+        overNumber: body.dismissalOver,
+        ballNumber: body.dismissalBall,
+      };
+    }
+
+    // Bowling performance
+    if (body.overs !== undefined) performance.overs = body.overs;
+    if (body.maidens !== undefined) performance.maidens = body.maidens;
+    if (body.runsConceded !== undefined) performance.runsConceded = body.runsConceded;
+    if (body.wickets !== undefined) performance.wickets = body.wickets;
+    if (body.dotBallsBowled !== undefined) performance.dotBallsBowled = body.dotBallsBowled;
+    if (body.wides !== undefined) performance.wides = body.wides;
+    if (body.noBalls !== undefined) performance.noBalls = body.noBalls;
+
+    // Calculate bowling metrics
+    if (performance.overs && performance.overs > 0) {
+      if (performance.runsConceded !== undefined) {
         performance.economy = performance.runsConceded / performance.overs;
       }
+      if (performance.wickets !== undefined && performance.wickets > 0) {
+        performance.bowlingAverage = performance.runsConceded / performance.wickets;
+        // Calculate balls bowled (assuming complete overs for simplicity)
+        const ballsBowled = Math.floor(performance.overs) * 6 + (performance.overs % 1) * 10;
+        performance.bowlingStrikeRate = ballsBowled / performance.wickets;
+      }
     }
 
-    // Add fielding stats if provided
-    if (body.catches !== undefined || body.stumpings !== undefined || body.runOuts !== undefined) {
-      performance.catches = body.catches || 0;
-      performance.stumpings = body.stumpings || 0;
-      performance.runOuts = body.runOuts || 0;
+    // Wicket types
+    if (body.caughtWickets !== undefined || body.bowledWickets !== undefined || 
+        body.lbwWickets !== undefined || body.stumpedWickets !== undefined) {
+      performance.wicketTypes = {
+        caught: body.caughtWickets || 0,
+        bowled: body.bowledWickets || 0,
+        lbw: body.lbwWickets || 0,
+        stumped: body.stumpedWickets || 0,
+        hitWicket: 0,
+      };
     }
+
+    // Fielding performance
+    if (body.catches !== undefined) performance.catches = body.catches;
+    if (body.stumpings !== undefined) performance.stumpings = body.stumpings;
+    if (body.runOuts !== undefined) performance.runOuts = body.runOuts;
     
     const newPerformance = new Performance(performance);
     await newPerformance.save();

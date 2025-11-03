@@ -182,10 +182,11 @@ export default function MatchTable({ onEditMatch, onDeleteMatch, refreshTrigger,
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Levels</SelectItem>
-                                <SelectItem value="school">School</SelectItem>
+                                <SelectItem value="under19-international">Under-19 International</SelectItem>
                                 <SelectItem value="domestic">Domestic</SelectItem>
                                 <SelectItem value="Ranji">Ranji</SelectItem>
                                 <SelectItem value="IPL">IPL</SelectItem>
+                                <SelectItem value="List-A">List-A</SelectItem>
                                 <SelectItem value="international">International</SelectItem>
                             </SelectContent>
                         </Select>

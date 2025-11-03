@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,10 +10,62 @@ import BowlingAnalytics from './BowlingAnalytics';
 import FieldingAnalytics from './FieldingAnalytics';
 import AdvancedMetrics from './AdvancedMetrics';
 import ComparisonAnalytics from './ComparisonAnalytics';
+import AnalyticsFiltersComponent, { AnalyticsFilters } from './AnalyticsFilters';
 import { RefreshCw } from 'lucide-react';
 
 export default function AnalyticsDashboard() {
   const [isRecalculating, setIsRecalculating] = useState(false);
+  const [filters, setFilters] = useState<AnalyticsFilters>({
+    dateRange: {},
+    levels: [],
+    formats: [],
+    homeAway: [],
+    matchTypes: [],
+    importance: [],
+    weather: [],
+    pitchConditions: [],
+    pitchTypes: [],
+    battingPositions: [],
+    bowlingPositions: [],
+    innings: [],
+    opponents: [],
+    venues: [],
+    countries: [],
+    series: [],
+    tournaments: [],
+    seriesTypes: [],
+    results: [],
+  });
+  const [availableOptions, setAvailableOptions] = useState<{
+    opponents: string[];
+    venues: string[];
+    countries: string[];
+    series: string[];
+    tournaments: string[];
+  }>({
+    opponents: [],
+    venues: [],
+    countries: [],
+    series: [],
+    tournaments: [],
+  });
+
+  // Fetch available filter options
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const response = await fetch('/api/analytics/filter-options');
+        const data = await response.json();
+        if (data.success) {
+          setAvailableOptions(data.options);
+        }
+      } catch (error) {
+        console.error('Error fetching filter options:', error);
+      }
+    };
+
+    fetchFilterOptions();
+  }, []);
 
   const handleRecalculate = async () => {
     setIsRecalculating(true);
@@ -49,6 +101,13 @@ export default function AnalyticsDashboard() {
           {isRecalculating ? 'Recalculating...' : 'Recalculate Analytics'}
         </Button>
       </div>
+
+      {/* Comprehensive Analytics Filters */}
+      <AnalyticsFiltersComponent
+        filters={filters}
+        onFiltersChange={setFilters}
+        availableOptions={availableOptions}
+      />
 
       <Tabs defaultValue="career" className="w-full">
         <TabsList className="grid w-full grid-cols-6">

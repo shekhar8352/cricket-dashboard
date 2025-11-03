@@ -50,19 +50,51 @@ export interface IMatch extends Document {
 
 const MatchSchema = new Schema<IMatch>(
   {
-    level: { type: String, enum: ["school", "domestic", "Ranji", "IPL", "international"], required: true },
+    level: { type: String, enum: ["under19-international", "domestic", "Ranji", "IPL", "List-A", "international"], required: true },
     format: { type: String, enum: ["Test", "ODI", "T20", "First-class", "List-A", "T20-domestic"], required: true },
     date: { type: Date, required: true },
     venue: { type: String, required: true },
     opponent: { type: String, required: true },
     result: String,
 
+    // Match details
     tossWinner: String,
     tossDecision: { type: String, enum: ["bat", "bowl"] },
     umpires: [String],
     referee: String,
     series: String,
+    seriesType: { type: String, enum: ["bilateral", "triangular", "tournament", "league"] },
+    tournament: String,
     manOfTheMatch: String,
+    
+    // Match conditions
+    weather: { type: String, enum: ["sunny", "cloudy", "overcast", "drizzle", "rain"] },
+    pitchCondition: { type: String, enum: ["green", "dry", "dusty", "flat", "two-paced"] },
+    pitchType: { type: String, enum: ["batting", "bowling", "balanced"] },
+    
+    // Match context
+    homeAway: { type: String, enum: ["home", "away", "neutral"] },
+    dayNight: Boolean,
+    matchNumber: Number,
+    totalMatches: Number,
+    
+    // Team composition
+    playingXI: [String],
+    captain: String,
+    wicketKeeper: String,
+    
+    // Match timing
+    startTime: String,
+    endTime: String,
+    
+    // Stadium details
+    city: String,
+    country: String,
+    stadiumCapacity: Number,
+    
+    // Match importance
+    importance: { type: String, enum: ["high", "medium", "low"] },
+    matchType: { type: String, enum: ["debut", "milestone", "final", "knockout", "regular"] },
   },
   { timestamps: true }
 );
