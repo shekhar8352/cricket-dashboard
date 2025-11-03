@@ -12,6 +12,7 @@ export default function Navigation() {
     { href: '/', label: 'Home' },
     { href: '/data-entry', label: 'Data Entry' },
     { href: '/series-management', label: 'Series Management' },
+    { href: '/tournament-presets', label: 'Tournament Presets' },
     { href: '/analytics', label: 'Analytics' },
   ];
 

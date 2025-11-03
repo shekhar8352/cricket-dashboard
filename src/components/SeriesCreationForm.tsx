@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "./ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Calendar, MapPin, Users } from "lucide-react";
+import { Plus, Trash2, Calendar, MapPin, Users, Trophy, Settings } from "lucide-react";
+import { indianTournamentPresets, getTournamentPreset, type TournamentPreset } from "@/data/tournamentPresets";
 
 // Validation schemas
 const seriesSchema = z.object({
@@ -42,6 +43,11 @@ const seriesSchema = z.object({
     level: z.enum(['under19-international', 'domestic', 'Ranji', 'IPL', 'List-A', 'international']),
     importance: z.enum(['high', 'medium', 'low']).optional(),
     matchType: z.enum(['debut', 'milestone', 'final', 'knockout', 'regular']).optional(),
+    didNotPlay: z.object({
+      reason: z.enum(['injury', 'illness', 'rest', 'disciplinary', 'personal', 'team_selection', 'other']),
+      details: z.string().optional(),
+      replacementPlayer: z.string().optional(),
+    }).optional(),
   })).min(1, 'At least 1 match is required')
 });
 
@@ -61,6 +67,8 @@ export default function SeriesCreationForm() {
   const [loading, setLoading] = useState(false);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [seeding, setSeeding] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState<string>('');
+  const [showDidNotPlay, setShowDidNotPlay] = useState<{ [key: number]: boolean }>({});
 
 
   const seriesForm = useForm<SeriesFormData>({
@@ -171,6 +179,67 @@ export default function SeriesCreationForm() {
       alert('Error seeding venues');
     }
     setSeeding(false);
+  };
+
+  const applyTournamentPreset = (presetId: string) => {
+    const preset = getTournamentPreset(presetId);
+    if (!preset) return;
+
+    // Apply basic tournament info
+    seriesForm.setValue('name', preset.name);
+    seriesForm.setValue('type', preset.type);
+    seriesForm.setValue('format', preset.format);
+    seriesForm.setValue('level', preset.level);
+    seriesForm.setValue('description', preset.description);
+
+    // Apply teams
+    const teams = preset.teams.map((teamName, index) => ({
+      name: teamName,
+      isHome: index === 0 // First team is home team
+    }));
+    seriesForm.setValue('teams', teams);
+
+    // Generate matches based on preset structure
+    type MatchData = {
+      date: string;
+      venue: string;
+      opponent: string;
+      matchNumber: number;
+      format: 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic';
+      level: 'under19-international' | 'domestic' | 'Ranji' | 'IPL' | 'List-A' | 'international';
+      city?: string;
+      country?: string;
+      importance?: 'high' | 'medium' | 'low';
+      matchType?: 'debut' | 'milestone' | 'final' | 'knockout' | 'regular';
+    };
+    
+    const matches: MatchData[] = [];
+    const totalMatches = preset.structure.totalMatches;
+    
+    for (let i = 1; i <= Math.min(totalMatches, 10); i++) { // Limit to 10 matches for demo
+      matches.push({
+        date: '',
+        venue: '',
+        opponent: preset.teams[1] || 'TBD',
+        matchNumber: i,
+        format: preset.format === 'mixed' ? 'ODI' : preset.format as any,
+        level: preset.level,
+        city: '',
+        country: '',
+        importance: i === totalMatches ? 'high' : 'medium',
+        matchType: i === totalMatches ? 'final' : 'regular'
+      });
+    }
+    
+    seriesForm.setValue('matches', matches);
+    setSelectedPreset(presetId);
+  };
+
+  const toggleDidNotPlay = (matchIndex: number) => {
+    setShowDidNotPlay(prev => ({
+      ...prev,
+      [matchIndex]: !prev[matchIndex]
+    }));
   };
 
   const addTeam = () => {
@@ -315,6 +384,64 @@ export default function SeriesCreationForm() {
             </CardHeader>
             <CardContent>
               <form onSubmit={seriesForm.handleSubmit(onSubmitSeries)} className="space-y-8">
+                {/* Tournament Presets */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium flex items-center gap-2">
+                      <Trophy className="w-5 h-5" />
+                      Tournament Presets
+                    </h3>
+                  </div>
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <Label>Select a Tournament Preset</Label>
+                    <Select onValueChange={(value) => {
+                      if (value === 'custom') {
+                        setSelectedPreset('');
+                        // Reset form to default values
+                        seriesForm.reset({
+                          teams: [{ name: '', isHome: true }],
+                          matches: [{ 
+                            date: '', 
+                            venue: '', 
+                            opponent: '', 
+                            matchNumber: 1,
+                            format: 'ODI',
+                            level: 'international',
+                            city: '',
+                            country: ''
+                          }]
+                        });
+                      } else {
+                        applyTournamentPreset(value);
+                      }
+                    }} value={selectedPreset || 'custom'}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Choose from famous tournaments..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="custom">Custom Tournament</SelectItem>
+                        {indianTournamentPresets.map((preset) => (
+                          <SelectItem key={preset.id} value={preset.id}>
+                            {preset.name} ({preset.format})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedPreset && selectedPreset !== 'custom' && (
+                      <div className="mt-3 p-3 bg-background rounded border">
+                        <p className="text-sm text-muted-foreground">
+                          {getTournamentPreset(selectedPreset)?.description}
+                        </p>
+                        <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+                          <span>Teams: {getTournamentPreset(selectedPreset)?.structure.totalTeams}</span>
+                          <span>Matches: {getTournamentPreset(selectedPreset)?.structure.totalMatches}</span>
+                          <span>Format: {getTournamentPreset(selectedPreset)?.format}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Basic Series Information */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Basic Information</h3>
@@ -519,57 +646,115 @@ export default function SeriesCreationForm() {
                   </div>
 
                   {matchFields.map((field, index) => (
-                    <div key={field.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg">
-                      <div className="space-y-2">
-                        <Label>Match #{index + 1} Date *</Label>
-                        <Input
-                          type="date"
-                          {...seriesForm.register(`matches.${index}.date`)}
-                        />
+                    <div key={field.id} className="p-4 border rounded-lg space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="space-y-2">
+                          <Label>Match #{index + 1} Date *</Label>
+                          <Input
+                            type="date"
+                            {...seriesForm.register(`matches.${index}.date`)}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Venue *</Label>
+                          <Select onValueChange={(value) => {
+                            seriesForm.setValue(`matches.${index}.venue`, value);
+                            const selectedVenue = venues.find(v => v.name === value);
+                            if (selectedVenue) {
+                              seriesForm.setValue(`matches.${index}.city`, selectedVenue.city);
+                              seriesForm.setValue(`matches.${index}.country`, selectedVenue.country);
+                            }
+                          }}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select venue" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {venues.map((venue) => (
+                                <SelectItem key={venue._id} value={venue.name}>
+                                  {venue.name}, {venue.city}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Opponent *</Label>
+                          <Input
+                            {...seriesForm.register(`matches.${index}.opponent`)}
+                            placeholder="Opponent team"
+                          />
+                        </div>
+
+                        <div className="flex items-end gap-2">
+                          <Button
+                            type="button"
+                            onClick={() => toggleDidNotPlay(index)}
+                            variant={showDidNotPlay[index] ? "default" : "outline"}
+                            size="sm"
+                          >
+                            <Settings className="w-4 h-4 mr-1" />
+                            {showDidNotPlay[index] ? "Hide" : "DNP"}
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => removeMatch(index)}
+                            variant="destructive"
+                            size="sm"
+                            disabled={matchFields.length === 1}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label>Venue *</Label>
-                        <Select onValueChange={(value) => {
-                          seriesForm.setValue(`matches.${index}.venue`, value);
-                          const selectedVenue = venues.find(v => v.name === value);
-                          if (selectedVenue) {
-                            seriesForm.setValue(`matches.${index}.city`, selectedVenue.city);
-                            seriesForm.setValue(`matches.${index}.country`, selectedVenue.country);
-                          }
-                        }}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select venue" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {venues.map((venue) => (
-                              <SelectItem key={venue._id} value={venue.name}>
-                                {venue.name}, {venue.city}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      {/* Did Not Play Section */}
+                      {showDidNotPlay[index] && (
+                        <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                          <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                            <Settings className="w-4 h-4" />
+                            Did Not Play Configuration
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <Label>Reason for Not Playing</Label>
+                              <Select onValueChange={(value) => 
+                                seriesForm.setValue(`matches.${index}.didNotPlay.reason`, value as any)
+                              }>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select reason" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="injury">Injury</SelectItem>
+                                  <SelectItem value="illness">Illness</SelectItem>
+                                  <SelectItem value="rest">Rest/Rotation</SelectItem>
+                                  <SelectItem value="disciplinary">Disciplinary</SelectItem>
+                                  <SelectItem value="personal">Personal Reasons</SelectItem>
+                                  <SelectItem value="team_selection">Team Selection</SelectItem>
+                                  <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
 
-                      <div className="space-y-2">
-                        <Label>Opponent *</Label>
-                        <Input
-                          {...seriesForm.register(`matches.${index}.opponent`)}
-                          placeholder="Opponent team"
-                        />
-                      </div>
+                            <div className="space-y-2">
+                              <Label>Details</Label>
+                              <Input
+                                {...seriesForm.register(`matches.${index}.didNotPlay.details`)}
+                                placeholder="Additional details..."
+                              />
+                            </div>
 
-                      <div className="flex items-end">
-                        <Button
-                          type="button"
-                          onClick={() => removeMatch(index)}
-                          variant="destructive"
-                          size="sm"
-                          disabled={matchFields.length === 1}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                            <div className="space-y-2">
+                              <Label>Replacement Player</Label>
+                              <Input
+                                {...seriesForm.register(`matches.${index}.didNotPlay.replacementPlayer`)}
+                                placeholder="Player name"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                   {seriesForm.formState.errors.matches && (

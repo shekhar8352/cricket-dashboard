@@ -17,35 +17,42 @@ export interface IMatch extends Document {
   seriesType?: "bilateral" | "triangular" | "tournament" | "league";
   tournament?: string;
   manOfTheMatch?: string;
-  
+
   // Match conditions
   weather?: "sunny" | "cloudy" | "overcast" | "drizzle" | "rain";
   pitchCondition?: "green" | "dry" | "dusty" | "flat" | "two-paced";
   pitchType?: "batting" | "bowling" | "balanced";
-  
+
   // Match context
   homeAway?: "home" | "away" | "neutral";
   dayNight?: boolean;
   matchNumber?: number; // in series/tournament
   totalMatches?: number; // in series/tournament
-  
+
   // Team composition
   playingXI?: string[];
   captain?: string;
   wicketKeeper?: string;
-  
+
   // Match timing
   startTime?: string;
   endTime?: string;
-  
+
   // Stadium details
   city?: string;
   country?: string;
   stadiumCapacity?: number;
-  
+
   // Match importance
   importance?: "high" | "medium" | "low";
   matchType?: "debut" | "milestone" | "final" | "knockout" | "regular";
+
+  // Player participation
+  didNotPlay?: {
+    reason: "injury" | "illness" | "rest" | "disciplinary" | "personal" | "team_selection" | "other";
+    details?: string;
+    replacementPlayer?: string;
+  };
 }
 
 const MatchSchema = new Schema<IMatch>(
@@ -66,35 +73,42 @@ const MatchSchema = new Schema<IMatch>(
     seriesType: { type: String, enum: ["bilateral", "triangular", "tournament", "league"] },
     tournament: String,
     manOfTheMatch: String,
-    
+
     // Match conditions
     weather: { type: String, enum: ["sunny", "cloudy", "overcast", "drizzle", "rain"] },
     pitchCondition: { type: String, enum: ["green", "dry", "dusty", "flat", "two-paced"] },
     pitchType: { type: String, enum: ["batting", "bowling", "balanced"] },
-    
+
     // Match context
     homeAway: { type: String, enum: ["home", "away", "neutral"] },
     dayNight: Boolean,
     matchNumber: Number,
     totalMatches: Number,
-    
+
     // Team composition
     playingXI: [String],
     captain: String,
     wicketKeeper: String,
-    
+
     // Match timing
     startTime: String,
     endTime: String,
-    
+
     // Stadium details
     city: String,
     country: String,
     stadiumCapacity: Number,
-    
+
     // Match importance
     importance: { type: String, enum: ["high", "medium", "low"] },
     matchType: { type: String, enum: ["debut", "milestone", "final", "knockout", "regular"] },
+
+    // Player participation
+    didNotPlay: {
+      reason: { type: String, enum: ["injury", "illness", "rest", "disciplinary", "personal", "team_selection", "other"] },
+      details: String,
+      replacementPlayer: String,
+    },
   },
   { timestamps: true }
 );
