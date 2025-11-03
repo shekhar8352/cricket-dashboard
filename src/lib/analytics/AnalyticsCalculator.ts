@@ -8,14 +8,23 @@ import FieldingAnalytics from '@/database/models/FieldingAnalytics';
 import AdvancedMetrics from '@/database/models/AdvancedMetrics';
 
 export class AnalyticsCalculator {
-  
+
   /**
    * Calculate comprehensive career analytics
    */
   static async calculateCareerAnalytics(): Promise<any> {
     try {
-      // Get all performances with match data
-      const performances = await Performance.find({})
+      // First, get the active player
+      const Player = (await import('@/database/models/Player')).default;
+      const activePlayer = await Player.findOne({ isActive: true });
+
+      if (!activePlayer) {
+        console.warn('No active player found');
+        return null;
+      }
+
+      // Get all performances for the active player with match data
+      const performances = await Performance.find({ player: activePlayer._id })
         .populate('match')
         .sort({ 'match.date': 1 });
 
@@ -24,7 +33,7 @@ export class AnalyticsCalculator {
       }
 
       const careerStats = this.processCareerStats(performances);
-      
+
       // Update or create career analytics
       const analytics = await CareerAnalytics.findOneAndUpdate(
         {},
@@ -44,12 +53,23 @@ export class AnalyticsCalculator {
    */
   static async calculateBattingAnalytics(): Promise<any> {
     try {
-      const performances = await Performance.find({ runs: { $exists: true } })
+      // Get the active player
+      const Player = (await import('@/database/models/Player')).default;
+      const activePlayer = await Player.findOne({ isActive: true });
+
+      if (!activePlayer) {
+        return null;
+      }
+
+      const performances = await Performance.find({
+        player: activePlayer._id,
+        runs: { $exists: true }
+      })
         .populate('match')
         .sort({ 'match.date': 1 });
 
       const battingStats = this.processBattingStats(performances);
-      
+
       const analytics = await BattingAnalytics.findOneAndUpdate(
         {},
         battingStats,
@@ -68,12 +88,23 @@ export class AnalyticsCalculator {
    */
   static async calculateBowlingAnalytics(): Promise<any> {
     try {
-      const performances = await Performance.find({ overs: { $exists: true } })
+      // Get the active player
+      const Player = (await import('@/database/models/Player')).default;
+      const activePlayer = await Player.findOne({ isActive: true });
+
+      if (!activePlayer) {
+        return null;
+      }
+
+      const performances = await Performance.find({
+        player: activePlayer._id,
+        overs: { $exists: true }
+      })
         .populate('match')
         .sort({ 'match.date': 1 });
 
       const bowlingStats = this.processBowlingStats(performances);
-      
+
       const analytics = await BowlingAnalytics.findOneAndUpdate(
         {},
         bowlingStats,
@@ -92,7 +123,16 @@ export class AnalyticsCalculator {
    */
   static async calculateFieldingAnalytics(): Promise<any> {
     try {
+      // Get the active player
+      const Player = (await import('@/database/models/Player')).default;
+      const activePlayer = await Player.findOne({ isActive: true });
+
+      if (!activePlayer) {
+        return null;
+      }
+
       const performances = await Performance.find({
+        player: activePlayer._id,
         $or: [
           { catches: { $exists: true } },
           { stumpings: { $exists: true } },
@@ -101,7 +141,7 @@ export class AnalyticsCalculator {
       }).populate('match').sort({ 'match.date': 1 });
 
       const fieldingStats = this.processFieldingStats(performances);
-      
+
       const analytics = await FieldingAnalytics.findOneAndUpdate(
         {},
         fieldingStats,
@@ -120,12 +160,20 @@ export class AnalyticsCalculator {
    */
   static async calculateAdvancedMetrics(): Promise<any> {
     try {
-      const performances = await Performance.find({})
+      // Get the active player
+      const Player = (await import('@/database/models/Player')).default;
+      const activePlayer = await Player.findOne({ isActive: true });
+
+      if (!activePlayer) {
+        return null;
+      }
+
+      const performances = await Performance.find({ player: activePlayer._id })
         .populate('match')
         .sort({ 'match.date': 1 });
 
       const advancedStats = this.processAdvancedMetrics(performances);
-      
+
       const analytics = await AdvancedMetrics.findOneAndUpdate(
         {},
         advancedStats,
@@ -174,7 +222,7 @@ export class AnalyticsCalculator {
     // Group by format
     const formatGroups: { [key: string]: any[] } = {};
     const yearGroups: { [key: number]: any[] } = {};
-    
+
     let totalBattingInnings = 0;
     let totalBowlingInnings = 0;
     let totalRunsConceded = 0;
@@ -183,6 +231,13 @@ export class AnalyticsCalculator {
 
     performances.forEach(perf => {
       const match = perf.match;
+
+      // Skip if match is not populated or null
+      if (!match || typeof match === 'string') {
+        console.warn('Performance has no populated match data:', perf._id);
+        return;
+      }
+
       const format = match.format;
       const year = new Date(match.date).getFullYear();
 
@@ -213,19 +268,19 @@ export class AnalyticsCalculator {
       if (perf.runs !== undefined) {
         stats.totalRuns += perf.runs;
         totalBattingInnings++;
-        
+
         if (perf.runs >= 100) stats.centuries++;
         else if (perf.runs >= 50) stats.halfCenturies++;
         else if (perf.runs >= 30) stats.thirties++;
-        
+
         if (perf.runs > stats.highestScore) {
           stats.highestScore = perf.runs;
         }
-        
+
         if (perf.dismissal?.type === 'not_out') {
           stats.notOuts++;
         }
-        
+
         if (perf.ballsFaced) {
           stats.totalBallsFaced += perf.ballsFaced;
         }
@@ -235,25 +290,25 @@ export class AnalyticsCalculator {
       if (perf.wickets !== undefined) {
         stats.totalWickets += perf.wickets;
         totalBowlingInnings++;
-        
+
         if (perf.runsConceded !== undefined) {
           totalRunsConceded += perf.runsConceded;
         }
-        
+
         if (perf.overs) {
           stats.totalBallsBowled += perf.overs * 6;
         }
-        
+
         if (perf.wickets >= 5) {
           stats.fiveWicketHauls++;
           if (perf.wickets >= 10) {
             stats.tenWicketHauls++;
           }
         }
-        
+
         // Best bowling figures
-        if (perf.wickets > bestBowlingWickets || 
-            (perf.wickets === bestBowlingWickets && perf.runsConceded < bestBowlingRuns)) {
+        if (perf.wickets > bestBowlingWickets ||
+          (perf.wickets === bestBowlingWickets && perf.runsConceded < bestBowlingRuns)) {
           bestBowlingWickets = perf.wickets;
           bestBowlingRuns = perf.runsConceded || 0;
           stats.bestBowlingFigures = `${perf.wickets}/${perf.runsConceded || 0}`;

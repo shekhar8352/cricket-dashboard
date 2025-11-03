@@ -73,50 +73,50 @@ export default function ComparisonAnalytics() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // For now, we'll use mock data since the API endpoint doesn't exist yet
-    // In a real implementation, this would fetch from /api/analytics/comparison
-    setComparisonData({
-      formatComparison: {
-        test: { matches: 45, runs: 3200, wickets: 85, average: 42.5, strikeRate: 58.2, economy: 3.2 },
-        odi: { matches: 78, runs: 2850, wickets: 92, average: 38.7, strikeRate: 89.4, economy: 5.1 },
-        t20: { matches: 65, runs: 1650, wickets: 68, average: 28.9, strikeRate: 135.6, economy: 7.8 }
-      },
-      homeAwayComparison: {
-        home: { matches: 94, runs: 3850, wickets: 125, average: 41.2, strikeRate: 82.5, economy: 4.8 },
-        away: { matches: 94, runs: 3845, wickets: 120, average: 39.8, strikeRate: 78.9, economy: 5.2 }
-      },
-      inningsComparison: {
-        firstInnings: { matches: 95, runs: 4200, wickets: 130, average: 42.8, strikeRate: 75.6 },
-        chasing: { matches: 93, runs: 3495, wickets: 115, average: 38.2, strikeRate: 88.4, successRate: 68.5 }
-      },
-      yearlyComparison: [
-        { year: 2020, matches: 12, runs: 580, wickets: 18, average: 38.7, strikeRate: 82.1, economy: 4.9 },
-        { year: 2021, matches: 18, runs: 920, wickets: 28, average: 42.3, strikeRate: 85.2, economy: 4.6 },
-        { year: 2022, matches: 22, runs: 1150, wickets: 35, average: 45.2, strikeRate: 88.7, economy: 4.2 },
-        { year: 2023, matches: 28, runs: 1380, wickets: 42, average: 41.8, strikeRate: 91.3, economy: 4.8 },
-        { year: 2024, matches: 32, runs: 1620, wickets: 48, average: 43.2, strikeRate: 89.5, economy: 4.5 }
-      ],
-      oppositionComparison: [
-        { opponent: 'Australia', matches: 25, runs: 1150, wickets: 32, average: 42.6, strikeRate: 85.2, economy: 4.8, winRate: 64.0 },
-        { opponent: 'England', matches: 22, runs: 980, wickets: 28, average: 39.2, strikeRate: 88.1, economy: 5.1, winRate: 59.1 },
-        { opponent: 'South Africa', matches: 18, runs: 820, wickets: 24, average: 41.0, strikeRate: 82.5, economy: 4.6, winRate: 66.7 },
-        { opponent: 'New Zealand', matches: 15, runs: 680, wickets: 20, average: 40.0, strikeRate: 86.3, economy: 4.9, winRate: 73.3 },
-        { opponent: 'Pakistan', matches: 20, runs: 850, wickets: 26, average: 37.8, strikeRate: 89.7, economy: 5.3, winRate: 55.0 }
-      ],
-      dayNightComparison: {
-        day: { matches: 145, runs: 6200, wickets: 195, average: 41.3, strikeRate: 79.8 },
-        dayNight: { matches: 43, runs: 1495, wickets: 50, average: 38.7, strikeRate: 85.2 }
-      }
-    });
-    setLoading(false);
+    fetchComparisonData();
   }, []);
+
+  const fetchComparisonData = async () => {
+    try {
+      const response = await fetch('/api/analytics/comparison');
+      const data = await response.json();
+      
+      if (data.success && data.comparison) {
+        setComparisonData(data.comparison);
+      } else {
+        // No data available - set empty state
+        setComparisonData(null);
+      }
+    } catch (error) {
+      console.error('Error fetching comparison data:', error);
+      setComparisonData(null);
+    }
+    setLoading(false);
+  };
 
   if (loading) {
     return <div className="flex justify-center p-8">Loading comparison analytics...</div>;
   }
 
   if (!comparisonData) {
-    return <div className="text-center p-8">No comparison data available</div>;
+    return (
+      <div className="text-center p-12">
+        <div className="max-w-md mx-auto">
+          <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium mb-2">No Performance Data Available</h3>
+          <p className="text-muted-foreground mb-4">
+            Start by adding match performances to see detailed comparison analytics across formats, venues, and opponents.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Go to <strong>Data Entry → Performance</strong> to add your first match performance.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   // Chart configurations
