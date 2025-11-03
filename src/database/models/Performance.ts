@@ -2,6 +2,11 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IPerformance extends Document {
   match: mongoose.Types.ObjectId;
+  player: mongoose.Types.ObjectId;
+  
+  // Team representation
+  teamRepresented: string; // Which team the player was playing for in this match
+  teamLevel: "under19-international" | "domestic" | "Ranji" | "IPL" | "List-A" | "international";
 
   // Match context
   battingPosition?: number;
@@ -153,6 +158,15 @@ export interface IPerformance extends Document {
 const PerformanceSchema = new Schema<IPerformance>(
   {
     match: { type: Schema.Types.ObjectId, ref: "Match", required: true },
+    player: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    
+    // Team representation
+    teamRepresented: { type: String, required: true },
+    teamLevel: { 
+      type: String, 
+      enum: ["under19-international", "domestic", "Ranji", "IPL", "List-A", "international"], 
+      required: true 
+    },
 
     // Match context
     battingPosition: Number,

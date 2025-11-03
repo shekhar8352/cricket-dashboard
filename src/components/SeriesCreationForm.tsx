@@ -27,6 +27,12 @@ const seriesSchema = z.object({
   trophy: z.string().optional(),
   sponsor: z.string().optional(),
 
+  // Player team representation
+  playerTeam: z.string().min(1, 'Player team is required'),
+  playerRole: z.enum(['batsman', 'bowler', 'allrounder', 'wicketkeeper']).optional(),
+  isCaptain: z.boolean(),
+  jerseyNumber: z.number().optional(),
+
   teams: z.array(z.object({
     name: z.string().min(1, 'Team name is required'),
     isHome: z.boolean()
@@ -69,6 +75,7 @@ export default function SeriesCreationForm() {
   const [seeding, setSeeding] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<string>('');
   const [showDidNotPlay, setShowDidNotPlay] = useState<{ [key: number]: boolean }>({});
+  const [currentPlayer, setCurrentPlayer] = useState<{ _id: string; fullName: string } | null>(null);
 
 
   const seriesForm = useForm<SeriesFormData>({
@@ -84,7 +91,8 @@ export default function SeriesCreationForm() {
         level: 'international',
         city: '',
         country: ''
-      }]
+      }],
+      isCaptain: false
     }
   });
 
@@ -100,10 +108,26 @@ export default function SeriesCreationForm() {
     name: "matches"
   });
 
-  // Fetch venues on component mount
+  // Fetch venues and current player on component mount
   useEffect(() => {
     fetchVenues();
+    fetchCurrentPlayer();
   }, []);
+
+  const fetchCurrentPlayer = async () => {
+    try {
+      const response = await fetch('/api/players');
+      const data = await response.json();
+      if (data.success && data.players.length > 0) {
+        const activePlayer = data.players.find((p: { isActive: boolean }) => p.isActive);
+        if (activePlayer) {
+          setCurrentPlayer(activePlayer);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching current player:', error);
+    }
+  };
 
   const fetchVenues = async () => {
     try {
@@ -146,6 +170,30 @@ export default function SeriesCreationForm() {
       });
 
       if (response.ok) {
+        const result = await response.json();
+
+        // Create series participation record
+        if (result.series && data.playerTeam && currentPlayer) {
+          try {
+            await fetch('/api/series-participation', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                playerId: currentPlayer._id,
+                seriesId: result.series._id,
+                teamRepresented: data.playerTeam,
+                teamLevel: data.level,
+                role: data.playerRole || 'batsman',
+                isCaptain: data.isCaptain || false,
+                jerseyNumber: data.jerseyNumber,
+                status: 'selected'
+              }),
+            });
+          } catch (error) {
+            console.error('Error creating participation record:', error);
+          }
+        }
+
         alert('Series created successfully!');
         seriesForm.reset();
 
@@ -199,6 +247,18 @@ export default function SeriesCreationForm() {
     }));
     seriesForm.setValue('teams', teams);
 
+    // Set player team (default to first team for Indian tournaments)
+    if (preset.teams.length > 0) {
+      const playerTeam = preset.teams.find(team =>
+        team.includes('India') ||
+        team.includes('Mumbai') ||
+        team.includes('Delhi') ||
+        team.includes('Karnataka') ||
+        team.includes('Chennai')
+      ) || preset.teams[0];
+      seriesForm.setValue('playerTeam', playerTeam);
+    }
+
     // Generate matches based on preset structure
     type MatchData = {
       date: string;
@@ -212,10 +272,10 @@ export default function SeriesCreationForm() {
       importance?: 'high' | 'medium' | 'low';
       matchType?: 'debut' | 'milestone' | 'final' | 'knockout' | 'regular';
     };
-    
+
     const matches: MatchData[] = [];
     const totalMatches = preset.structure.totalMatches;
-    
+
     for (let i = 1; i <= Math.min(totalMatches, 10); i++) { // Limit to 10 matches for demo
       matches.push({
         date: '',
@@ -230,7 +290,7 @@ export default function SeriesCreationForm() {
         matchType: i === totalMatches ? 'final' : 'regular'
       });
     }
-    
+
     seriesForm.setValue('matches', matches);
     setSelectedPreset(presetId);
   };
@@ -357,6 +417,13 @@ export default function SeriesCreationForm() {
         <p className="text-muted-foreground">
           Create series, tournaments, and manage venues for cricket matches
         </p>
+        {currentPlayer && (
+          <div className="mt-4 p-3 bg-primary/10 rounded-lg inline-block">
+            <p className="text-sm font-medium">
+              Creating series for: <span className="text-primary">{currentPlayer.fullName}</span>
+            </p>
+          </div>
+        )}
       </div>
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'series' | 'venues')} className="w-full">
@@ -400,10 +467,10 @@ export default function SeriesCreationForm() {
                         // Reset form to default values
                         seriesForm.reset({
                           teams: [{ name: '', isHome: true }],
-                          matches: [{ 
-                            date: '', 
-                            venue: '', 
-                            opponent: '', 
+                          matches: [{
+                            date: '',
+                            venue: '',
+                            opponent: '',
                             matchNumber: 1,
                             format: 'ODI',
                             level: 'international',
@@ -583,6 +650,66 @@ export default function SeriesCreationForm() {
                   </div>
                 </div>
 
+                {/* Player Team Representation */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Player Team Representation
+                  </h3>
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="playerTeam">Playing For Team *</Label>
+                        <Input
+                          id="playerTeam"
+                          {...seriesForm.register('playerTeam')}
+                          placeholder="e.g., India, Mumbai Indians, Karnataka"
+                        />
+                        {seriesForm.formState.errors.playerTeam && (
+                          <p className="text-destructive text-sm">{seriesForm.formState.errors.playerTeam.message}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Player Role</Label>
+                        <Select onValueChange={(value) => seriesForm.setValue('playerRole', value as 'batsman' | 'bowler' | 'allrounder' | 'wicketkeeper')}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="batsman">Batsman</SelectItem>
+                            <SelectItem value="bowler">Bowler</SelectItem>
+                            <SelectItem value="allrounder">All-rounder</SelectItem>
+                            <SelectItem value="wicketkeeper">Wicket-keeper</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="jerseyNumber">Jersey Number</Label>
+                        <Input
+                          id="jerseyNumber"
+                          type="number"
+                          {...seriesForm.register('jerseyNumber', { valueAsNumber: true })}
+                          placeholder="e.g., 18"
+                          min="1"
+                          max="99"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 mt-4">
+                      <input
+                        type="checkbox"
+                        id="isCaptain"
+                        {...seriesForm.register('isCaptain')}
+                        className="rounded"
+                      />
+                      <Label htmlFor="isCaptain">Captain of the team</Label>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Teams Section */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -719,7 +846,7 @@ export default function SeriesCreationForm() {
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
                               <Label>Reason for Not Playing</Label>
-                              <Select onValueChange={(value) => 
+                              <Select onValueChange={(value) =>
                                 seriesForm.setValue(`matches.${index}.didNotPlay.reason`, value as any)
                               }>
                                 <SelectTrigger>
@@ -806,7 +933,7 @@ export default function SeriesCreationForm() {
                       {seeding ? 'Reloading...' : 'Reload Venues'}
                     </Button>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {venues.map((venue) => (
                       <div key={venue._id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">

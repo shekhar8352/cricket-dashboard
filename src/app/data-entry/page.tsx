@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import MatchTable from "@/components/MatchTable";
 import MatchSummary from "@/components/MatchSummary";
 import SeriesCreationForm from "@/components/SeriesCreationForm";
+import SeriesParticipationList from "@/components/SeriesParticipationList";
 
 // Form validation schemas
 const playerSchema = z.object({
@@ -1215,7 +1216,10 @@ export default function DataEntryPage() {
           </TabsContent>
 
           <TabsContent value="series">
-            <SeriesCreationForm />
+            <div className="space-y-6">
+              <SeriesCreationForm />
+              <SeriesParticipationList />
+            </div>
           </TabsContent>
 
           <TabsContent value="performance">
