@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import MatchTable from "@/components/MatchTable";
+import MatchSummary from "@/components/MatchSummary";
 
 // Form validation schemas
 const playerSchema = z.object({
@@ -97,6 +99,20 @@ export default function DataEntryPage() {
     }>;
   } | null>(null);
   const [checkingPlayer, setCheckingPlayer] = useState(true);
+  const [editingMatch, setEditingMatch] = useState<{
+    _id: string;
+    level: string;
+    format: string;
+    date: string;
+    venue: string;
+    opponent: string;
+    result?: string;
+    tossWinner?: string;
+    tossDecision?: string;
+    series?: string;
+    manOfTheMatch?: string;
+  } | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const playerForm = useForm<PlayerFormData>({
     resolver: zodResolver(playerSchema),
@@ -228,26 +244,100 @@ export default function DataEntryPage() {
   };
 
   const onSubmitMatch = async (data: MatchFormData) => {
+    const isEditing = editingMatch !== null;
     setLoading(true);
     try {
-      const response = await fetch('/api/matches', {
-        method: 'POST',
+      const url = isEditing ? `/api/matches/${editingMatch._id}` : '/api/matches';
+      const method = isEditing ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       
       if (response.ok) {
-        const newMatch = await response.json();
-        setMatches(prev => [...prev, newMatch]);
-        alert('Match added successfully!');
+        const result = await response.json();
+        if (isEditing) {
+          setMatches(prev => prev.map(match => 
+            match._id === editingMatch._id ? result.match : match
+          ));
+          alert('Match updated successfully!');
+          setEditingMatch(null);
+        } else {
+          setMatches(prev => [...prev, result.match]);
+          alert('Match added successfully!');
+        }
         matchForm.reset();
+        setRefreshTrigger(prev => prev + 1);
       } else {
-        alert('Error adding match');
+        alert(isEditing ? 'Error updating match' : 'Error adding match');
       }
     } catch {
-      alert('Error adding match');
+      alert(isEditing ? 'Error updating match' : 'Error adding match');
     }
     setLoading(false);
+  };
+
+  const handleEditMatch = (match: {
+    _id: string;
+    level: string;
+    format: string;
+    date: string;
+    venue: string;
+    opponent: string;
+    result?: string;
+    tossWinner?: string;
+    tossDecision?: string;
+    series?: string;
+    manOfTheMatch?: string;
+  }) => {
+    setEditingMatch(match);
+    // Pre-populate the form with match data
+    matchForm.setValue('level', match.level as 'school' | 'domestic' | 'Ranji' | 'IPL' | 'international');
+    matchForm.setValue('format', match.format as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic');
+    matchForm.setValue('date', new Date(match.date).toISOString().split('T')[0]);
+    matchForm.setValue('venue', match.venue);
+    matchForm.setValue('opponent', match.opponent);
+    matchForm.setValue('result', match.result || '');
+    matchForm.setValue('tossWinner', match.tossWinner || '');
+    matchForm.setValue('tossDecision', match.tossDecision as 'bat' | 'bowl' | undefined);
+    matchForm.setValue('series', match.series || '');
+    matchForm.setValue('manOfTheMatch', match.manOfTheMatch || '');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMatch(null);
+    matchForm.reset();
+  };
+
+  const handleDeleteMatch = async (matchId: string) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/matches/${matchId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        setMatches(prev => prev.filter(match => match._id !== matchId));
+        alert('Match deleted successfully!');
+        // If we were editing this match, cancel the edit
+        if (editingMatch && editingMatch._id === matchId) {
+          handleCancelEdit();
+        }
+        setRefreshTrigger(prev => prev + 1);
+      } else {
+        alert('Error deleting match');
+      }
+    } catch {
+      alert('Error deleting match');
+    }
+    setLoading(false);
+  };
+
+  const handleRefreshMatches = () => {
+    fetchMatches();
+    setRefreshTrigger(prev => prev + 1);
   };
 
   const onSubmitPerformance = async (data: PerformanceFormData) => {
@@ -612,14 +702,27 @@ export default function DataEntryPage() {
           </TabsContent>
 
           <TabsContent value="match">
-            <Card>
-              <CardHeader>
-                <CardTitle>Match Details</CardTitle>
-                <CardDescription>
-                  Enter match information including venue, opponent, and match conditions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {editingMatch ? 'Edit Match Details' : 'Match Details'}
+                  </CardTitle>
+                  <CardDescription>
+                    {editingMatch 
+                      ? 'Update match information including venue, opponent, and match conditions'
+                      : 'Enter match information including venue, opponent, and match conditions'
+                    }
+                  </CardDescription>
+                  {editingMatch && (
+                    <div className="flex gap-2 mt-2">
+                      <Button variant="outline" size="sm" onClick={handleCancelEdit}>
+                        Cancel Edit
+                      </Button>
+                    </div>
+                  )}
+                </CardHeader>
+                <CardContent>
                 <form onSubmit={matchForm.handleSubmit(onSubmitMatch)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
@@ -716,6 +819,28 @@ export default function DataEntryPage() {
                     </div>
 
                     <div className="space-y-2">
+                      <Label htmlFor="tossWinner">Toss Winner</Label>
+                      <Input
+                        id="tossWinner"
+                        {...matchForm.register('tossWinner')}
+                        placeholder="Team that won the toss"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Toss Decision</Label>
+                      <Select onValueChange={(value) => matchForm.setValue('tossDecision', value as 'bat' | 'bowl')}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select decision" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="bat">Bat</SelectItem>
+                          <SelectItem value="bowl">Bowl</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
                       <Label htmlFor="manOfTheMatch">Man of the Match</Label>
                       <Input
                         id="manOfTheMatch"
@@ -726,11 +851,26 @@ export default function DataEntryPage() {
                   </div>
 
                   <Button type="submit" disabled={loading} className="w-full">
-                    {loading ? 'Adding Match...' : 'Add Match'}
+                    {loading 
+                      ? (editingMatch ? 'Updating Match...' : 'Adding Match...') 
+                      : (editingMatch ? 'Update Match' : 'Add Match')
+                    }
                   </Button>
                 </form>
               </CardContent>
             </Card>
+
+            {/* Match Summary */}
+            <MatchSummary matches={matches} />
+
+            {/* Match Table */}
+            <MatchTable 
+              onEditMatch={handleEditMatch} 
+              onDeleteMatch={handleDeleteMatch}
+              refreshTrigger={refreshTrigger}
+              onRefresh={handleRefreshMatches}
+            />
+            </div>
           </TabsContent>
 
           <TabsContent value="performance">
