@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "./ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Calendar, MapPin, Users, Trophy, Settings } from "lucide-react";
-import { indianTournamentPresets, getTournamentPreset, type TournamentPreset, getVenuesByCountry, getVenuesForFormat } from "@/data/tournamentPresets";
+import { indianTournamentPresets, getTournamentPreset, getVenuesForFormat } from "@/data/tournamentPresets";
 
 // Validation schemas
 const seriesSchema = z.object({
@@ -245,11 +245,11 @@ export default function SeriesCreationForm() {
     if (preset.hostCountry) {
       seriesForm.setValue('hostCountry', preset.hostCountry);
     }
-    
+
     // Update team suggestions based on preset level
     const suggestions = getTeamSuggestions(preset.level, preset.format);
     setTeamSuggestions(suggestions);
-    
+
     // Update available venues based on host country and format
     if (preset.hostCountry) {
       const countryVenues = getVenuesForFormat(preset.hostCountry, preset.format);
@@ -273,7 +273,7 @@ export default function SeriesCreationForm() {
         team.includes('Chennai')
       ) || preset.teams[0];
       seriesForm.setValue('playerTeam', playerTeam);
-      
+
       // Update player's team in database
       updatePlayerTeam(playerTeam, preset.level);
     }
@@ -350,7 +350,7 @@ export default function SeriesCreationForm() {
 
   const getTeamSuggestions = (level: string, format: string) => {
     const suggestions: string[] = [];
-    
+
     switch (level) {
       case 'international':
         suggestions.push('India', 'Australia', 'England', 'South Africa', 'New Zealand', 'Pakistan', 'Sri Lanka', 'Bangladesh', 'West Indies', 'Afghanistan');
@@ -371,13 +371,13 @@ export default function SeriesCreationForm() {
       default:
         suggestions.push('India', 'Mumbai', 'Delhi', 'Karnataka', 'Chennai Super Kings', 'Mumbai Indians');
     }
-    
+
     return suggestions;
   };
 
   // Update team suggestions when level changes
   const handleLevelChange = (level: string) => {
-    seriesForm.setValue('level', level as any);
+    seriesForm.setValue('level', level as 'under19-international' | 'domestic' | 'Ranji' | 'IPL' | 'List-A' | 'international');
     const format = seriesForm.getValues('format') || 'ODI';
     const suggestions = getTeamSuggestions(level, format);
     setTeamSuggestions(suggestions);
@@ -393,12 +393,12 @@ export default function SeriesCreationForm() {
 
   const handleHostCountryChange = (country: string) => {
     seriesForm.setValue('hostCountry', country);
-    
+
     // Update available venues based on host country and format
     const format = seriesForm.getValues('format') || 'ODI';
     const countryVenues = getVenuesForFormat(country, format);
     setAvailableVenues(countryVenues);
-    
+
     // Clear existing venue selections in matches since country changed
     const currentMatches = seriesForm.getValues('matches') || [];
     const updatedMatches = currentMatches.map(match => ({
@@ -411,8 +411,8 @@ export default function SeriesCreationForm() {
   };
 
   const handleFormatChange = (format: string) => {
-    seriesForm.setValue('format', format as any);
-    
+    seriesForm.setValue('format', format as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic' | 'mixed');
+
     // Update venues based on new format and current host country
     const hostCountry = seriesForm.getValues('hostCountry');
     if (hostCountry) {
@@ -482,7 +482,7 @@ export default function SeriesCreationForm() {
         const venueIndex = (i - 1) % availableVenues.length;
         const assignedVenue = availableVenues.length > 0 ? availableVenues[venueIndex] : '';
         const venue = venues.find(v => v.name === assignedVenue);
-        
+
         matches.push({
           date: '',
           venue: assignedVenue,
@@ -507,7 +507,7 @@ export default function SeriesCreationForm() {
           const venueIndex = (matchNumber - 1) % availableVenues.length;
           const assignedVenue = availableVenues.length > 0 ? availableVenues[venueIndex] : '';
           const venue = venues.find(v => v.name === assignedVenue);
-          
+
           matches.push({
             date: '',
             venue: assignedVenue,
@@ -526,7 +526,7 @@ export default function SeriesCreationForm() {
       const finalVenueIndex = (matchNumber - 1) % availableVenues.length;
       const finalVenue = availableVenues.length > 0 ? availableVenues[finalVenueIndex] : '';
       const finalVenueObj = venues.find(v => v.name === finalVenue);
-      
+
       matches.push({
         date: '',
         venue: finalVenue,
@@ -1093,7 +1093,7 @@ export default function SeriesCreationForm() {
                   <MapPin className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium mb-2">No venues loaded</h3>
                   <p className="text-muted-foreground mb-4">
-                    Load world-famous cricket venues including Lord's, MCG, Eden Gardens, and many more
+                    Load world-famous cricket venues including Lord&apos;s, MCG, Eden Gardens, and many more
                   </p>
                   <Button onClick={seedVenues} disabled={seeding} size="lg">
                     {seeding ? 'Loading Venues...' : 'Load World Cricket Venues'}

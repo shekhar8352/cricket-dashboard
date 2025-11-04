@@ -86,7 +86,7 @@ export default function SeriesParticipationList() {
           Series Participations
         </CardTitle>
         <CardDescription>
-          Teams and tournaments you've represented
+          Teams and tournaments you&apos;ve represented
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Build comprehensive performance object
-    const performance: any = {
+    const performance: Record<string, unknown> = {
       match: body.matchId,
     };
 

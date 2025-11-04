@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/database/mongoose';
 import SeriesParticipation from '@/database/models/SeriesParticipation';
-import Player from '@/database/models/Player';
-import Series from '@/database/models/Series';
 
 export async function GET(request: NextRequest) {
   try {

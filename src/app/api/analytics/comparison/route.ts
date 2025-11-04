@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/database/mongoose';
 import Performance from '@/database/models/Performance';
-import Match from '@/database/models/Match';
 import Player from '@/database/models/Player';
 
 export async function GET() {
@@ -50,10 +49,14 @@ export async function GET() {
     };
 
     // Calculate yearly comparison
-    const yearlyStats: { [key: number]: any } = {};
+    const yearlyStats: { [key: number]: { 
+      year: number; matches: number; runs: number; wickets: number; ballsFaced: number; oversBowled: number; runsConceded: number 
+    } } = {};
 
     // Calculate opposition comparison
-    const oppositionStats: { [key: string]: any } = {};
+    const oppositionStats: { [key: string]: { 
+      opponent: string; matches: number; runs: number; wickets: number; ballsFaced: number; oversBowled: number; runsConceded: number; wins: number 
+    } } = {};
 
     // Calculate day/night comparison
     const dayNightStats = {
@@ -63,7 +66,7 @@ export async function GET() {
 
     // Process each performance
     performances.forEach((perf) => {
-      const match = perf.match as any;
+      const match = perf.match as { date: Date; format: string; homeAway?: string; opponent: string; dayNight?: boolean };
       const year = new Date(match.date).getFullYear();
       const format = match.format.toLowerCase();
       const homeAway = match.homeAway || 'home';
@@ -136,7 +139,7 @@ export async function GET() {
     });
 
     // Calculate averages and rates
-    const calculateStats = (stat: any) => ({
+    const calculateStats = (stat: { matches: number; runs: number; wickets: number; ballsFaced: number; oversBowled: number; runsConceded: number }) => ({
       matches: stat.matches,
       runs: stat.runs,
       wickets: stat.wickets,
@@ -164,15 +167,15 @@ export async function GET() {
           successRate: inningsStats.chasing.matches > 0 ? (inningsStats.chasing.wins / inningsStats.chasing.matches) * 100 : 0
         }
       },
-      yearlyComparison: Object.values(yearlyStats).map((year: any) => ({
+      yearlyComparison: Object.values(yearlyStats).map((year) => ({
         ...calculateStats(year),
         year: year.year
-      })).sort((a: any, b: any) => a.year - b.year),
-      oppositionComparison: Object.values(oppositionStats).map((opp: any) => ({
+      })).sort((a, b) => a.year - b.year),
+      oppositionComparison: Object.values(oppositionStats).map((opp) => ({
         ...calculateStats(opp),
         opponent: opp.opponent,
         winRate: opp.matches > 0 ? (opp.wins / opp.matches) * 100 : 0
-      })).sort((a: any, b: any) => b.matches - a.matches),
+      })).sort((a, b) => b.matches - a.matches),
       dayNightComparison: {
         day: calculateStats(dayNightStats.day),
         dayNight: calculateStats(dayNightStats.dayNight)
