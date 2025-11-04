@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "./ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Calendar, MapPin, Users, Trophy, Settings } from "lucide-react";
-import { indianTournamentPresets, getTournamentPreset, type TournamentPreset } from "@/data/tournamentPresets";
+import { indianTournamentPresets, getTournamentPreset, type TournamentPreset, getVenuesByCountry, getVenuesForFormat } from "@/data/tournamentPresets";
 
 // Validation schemas
 const seriesSchema = z.object({
@@ -78,6 +78,7 @@ export default function SeriesCreationForm() {
   const [currentPlayer, setCurrentPlayer] = useState<{ _id: string; fullName: string } | null>(null);
   const [teamSuggestions, setTeamSuggestions] = useState<string[]>([]);
   const [updatingTeam, setUpdatingTeam] = useState(false);
+  const [availableVenues, setAvailableVenues] = useState<string[]>([]);
 
 
   const seriesForm = useForm<SeriesFormData>({
@@ -241,10 +242,19 @@ export default function SeriesCreationForm() {
     seriesForm.setValue('format', preset.format);
     seriesForm.setValue('level', preset.level);
     seriesForm.setValue('description', preset.description);
+    if (preset.hostCountry) {
+      seriesForm.setValue('hostCountry', preset.hostCountry);
+    }
     
     // Update team suggestions based on preset level
     const suggestions = getTeamSuggestions(preset.level, preset.format);
     setTeamSuggestions(suggestions);
+    
+    // Update available venues based on host country and format
+    if (preset.hostCountry) {
+      const countryVenues = getVenuesForFormat(preset.hostCountry, preset.format);
+      setAvailableVenues(countryVenues);
+    }
 
     // Apply teams
     const teams = preset.teams.map((teamName, index) => ({
@@ -381,6 +391,36 @@ export default function SeriesCreationForm() {
     }
   };
 
+  const handleHostCountryChange = (country: string) => {
+    seriesForm.setValue('hostCountry', country);
+    
+    // Update available venues based on host country and format
+    const format = seriesForm.getValues('format') || 'ODI';
+    const countryVenues = getVenuesForFormat(country, format);
+    setAvailableVenues(countryVenues);
+    
+    // Clear existing venue selections in matches since country changed
+    const currentMatches = seriesForm.getValues('matches') || [];
+    const updatedMatches = currentMatches.map(match => ({
+      ...match,
+      venue: '',
+      city: '',
+      country: country
+    }));
+    seriesForm.setValue('matches', updatedMatches);
+  };
+
+  const handleFormatChange = (format: string) => {
+    seriesForm.setValue('format', format as any);
+    
+    // Update venues based on new format and current host country
+    const hostCountry = seriesForm.getValues('hostCountry');
+    if (hostCountry) {
+      const formatVenues = getVenuesForFormat(hostCountry, format);
+      setAvailableVenues(formatVenues);
+    }
+  };
+
   const addTeam = () => {
     appendTeam({ name: '', isHome: false });
   };
@@ -389,6 +429,7 @@ export default function SeriesCreationForm() {
     const matchNumber = matchFields.length + 1;
     const currentFormat = seriesForm.getValues('format');
     const matchFormat = currentFormat === 'mixed' ? 'ODI' : currentFormat;
+    const hostCountry = seriesForm.getValues('hostCountry') || '';
 
     appendMatch({
       date: '',
@@ -398,7 +439,7 @@ export default function SeriesCreationForm() {
       format: matchFormat as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic',
       level: seriesForm.getValues('level'),
       city: '',
-      country: ''
+      country: hostCountry
     });
   };
 
@@ -437,15 +478,20 @@ export default function SeriesCreationForm() {
 
       for (let i = 1; i <= matchCount; i++) {
         const matchFormat = format === 'mixed' ? (i % 2 === 1 ? 'ODI' : 'T20') : format;
+        // Assign venue from available venues (rotate through them)
+        const venueIndex = (i - 1) % availableVenues.length;
+        const assignedVenue = availableVenues.length > 0 ? availableVenues[venueIndex] : '';
+        const venue = venues.find(v => v.name === assignedVenue);
+        
         matches.push({
           date: '',
-          venue: '',
+          venue: assignedVenue,
           opponent,
           matchNumber: i,
           format: matchFormat as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic',
           level,
-          city: '',
-          country: ''
+          city: venue?.city || '',
+          country: venue?.country || seriesForm.getValues('hostCountry') || ''
         });
       }
     } else if (seriesType === 'triangular' && teams.length === 3) {
@@ -457,30 +503,39 @@ export default function SeriesCreationForm() {
       for (let i = 0; i < teamNames.length; i++) {
         for (let j = i + 1; j < teamNames.length; j++) {
           const matchFormat = format === 'mixed' ? 'ODI' : format;
+          // Assign venue from available venues
+          const venueIndex = (matchNumber - 1) % availableVenues.length;
+          const assignedVenue = availableVenues.length > 0 ? availableVenues[venueIndex] : '';
+          const venue = venues.find(v => v.name === assignedVenue);
+          
           matches.push({
             date: '',
-            venue: '',
+            venue: assignedVenue,
             opponent: teamNames[j],
             matchNumber: matchNumber++,
             format: matchFormat as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic',
             level,
-            city: '',
-            country: ''
+            city: venue?.city || '',
+            country: venue?.country || seriesForm.getValues('hostCountry') || ''
           });
         }
       }
 
       // Final match
       const finalFormat = format === 'mixed' ? 'ODI' : format;
+      const finalVenueIndex = (matchNumber - 1) % availableVenues.length;
+      const finalVenue = availableVenues.length > 0 ? availableVenues[finalVenueIndex] : '';
+      const finalVenueObj = venues.find(v => v.name === finalVenue);
+      
       matches.push({
         date: '',
-        venue: '',
+        venue: finalVenue,
         opponent: 'TBD',
         matchNumber: matchNumber,
         format: finalFormat as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic',
         level,
-        city: '',
-        country: '',
+        city: finalVenueObj?.city || '',
+        country: finalVenueObj?.country || seriesForm.getValues('hostCountry') || '',
         matchType: 'final'
       });
     }
@@ -624,7 +679,7 @@ export default function SeriesCreationForm() {
 
                     <div className="space-y-2">
                       <Label>Format *</Label>
-                      <Select onValueChange={(value) => seriesForm.setValue('format', value as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic' | 'mixed')}>
+                      <Select onValueChange={handleFormatChange}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select format" />
                         </SelectTrigger>
@@ -688,12 +743,29 @@ export default function SeriesCreationForm() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="hostCountry">Host Country *</Label>
-                      <Input
-                        id="hostCountry"
-                        {...seriesForm.register('hostCountry')}
-                        placeholder="e.g., India"
-                      />
+                      <Label>Host Country *</Label>
+                      <Select onValueChange={handleHostCountryChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select host country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="India">India</SelectItem>
+                          <SelectItem value="Australia">Australia</SelectItem>
+                          <SelectItem value="England">England</SelectItem>
+                          <SelectItem value="South Africa">South Africa</SelectItem>
+                          <SelectItem value="New Zealand">New Zealand</SelectItem>
+                          <SelectItem value="Pakistan">Pakistan</SelectItem>
+                          <SelectItem value="Sri Lanka">Sri Lanka</SelectItem>
+                          <SelectItem value="Bangladesh">Bangladesh</SelectItem>
+                          <SelectItem value="West Indies">West Indies</SelectItem>
+                          <SelectItem value="Afghanistan">Afghanistan</SelectItem>
+                          <SelectItem value="Zimbabwe">Zimbabwe</SelectItem>
+                          <SelectItem value="UAE">UAE</SelectItem>
+                          <SelectItem value="Ireland">Ireland</SelectItem>
+                          <SelectItem value="Scotland">Scotland</SelectItem>
+                          <SelectItem value="Netherlands">Netherlands</SelectItem>
+                        </SelectContent>
+                      </Select>
                       {seriesForm.formState.errors.hostCountry && (
                         <p className="text-destructive text-sm">{seriesForm.formState.errors.hostCountry.message}</p>
                       )}
@@ -892,14 +964,23 @@ export default function SeriesCreationForm() {
                             }
                           }}>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select venue" />
+                              <SelectValue placeholder={availableVenues.length > 0 ? "Select venue" : "Select host country first"} />
                             </SelectTrigger>
                             <SelectContent>
-                              {venues.map((venue) => (
-                                <SelectItem key={venue._id} value={venue.name}>
-                                  {venue.name}, {venue.city}
+                              {availableVenues.length > 0 ? (
+                                availableVenues.map((venueName) => {
+                                  const venue = venues.find(v => v.name === venueName);
+                                  return venue ? (
+                                    <SelectItem key={venue._id} value={venue.name}>
+                                      {venue.name}, {venue.city}
+                                    </SelectItem>
+                                  ) : null;
+                                })
+                              ) : (
+                                <SelectItem value="no-venues" disabled>
+                                  Select host country and format first
                                 </SelectItem>
-                              ))}
+                              )}
                             </SelectContent>
                           </Select>
                         </div>
