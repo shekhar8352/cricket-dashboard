@@ -47,7 +47,7 @@ export interface ISeries extends Document {
 
 const SeriesSchema = new Schema<ISeries>(
   {
-    name: { type: String, required: true },
+    name: { type: String, required: true, unique: true },
     type: { 
       type: String, 
       enum: ["bilateral", "triangular", "tournament", "league"], 
@@ -76,7 +76,7 @@ const SeriesSchema = new Schema<ISeries>(
     }],
     
     // Match structure
-    totalMatches: { type: Number, required: true },
+    totalMatches: { type: Number, required: true, min: 0 },
     matchesPlayed: { type: Number, default: 0 },
     
     // Series context

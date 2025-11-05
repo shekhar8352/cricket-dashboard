@@ -974,6 +974,9 @@ export default function DataEntryPage() {
                           {...matchForm.register('series')}
                           placeholder="e.g., India vs Australia Test Series 2023"
                         />
+                        <p className="text-xs text-muted-foreground">
+                          Enter the series name to link this match to a series. You can create series in the Series/Tournament tab.
+                        </p>
                       </div>
 
                       <div className="space-y-2">

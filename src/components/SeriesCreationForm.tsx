@@ -54,7 +54,7 @@ const seriesSchema = z.object({
       details: z.string().optional(),
       replacementPlayer: z.string().optional(),
     }).optional(),
-  })).min(1, 'At least 1 match is required')
+  })).optional()
 });
 
 type SeriesFormData = z.infer<typeof seriesSchema>;
@@ -85,16 +85,7 @@ export default function SeriesCreationForm() {
     resolver: zodResolver(seriesSchema),
     defaultValues: {
       teams: [{ name: '', isHome: true }],
-      matches: [{
-        date: '',
-        venue: '',
-        opponent: '',
-        matchNumber: 1,
-        format: 'ODI',
-        level: 'international',
-        city: '',
-        country: ''
-      }],
+      matches: [], // Start with no matches
       isCaptain: false
     }
   });
@@ -150,26 +141,46 @@ export default function SeriesCreationForm() {
       return;
     }
 
+    // Validate that all matches have required fields (only if matches exist)
+    if (data.matches && data.matches.length > 0) {
+      const invalidMatches = data.matches.filter(match =>
+        !match.date || !match.venue || !match.opponent
+      );
+
+      if (invalidMatches.length > 0) {
+        alert(`Please fill in all required fields for matches. ${invalidMatches.length} match(es) are incomplete.`);
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       // Calculate total matches
-      const totalMatches = data.matches.length;
+      const totalMatches = data.matches ? data.matches.length : 0;
 
-      // Prepare series data
-      const seriesData: Record<string, unknown> = {
-        ...data,
+      // Prepare series data - exclude player-specific fields
+      const { playerTeam, playerRole, isCaptain, jerseyNumber, ...seriesOnlyData } = data;
+
+      const seriesData = {
+        ...seriesOnlyData,
         totalMatches,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
-        matches: data.matches.map((match, index) => ({
+        status: 'upcoming' as const,
+        matches: data.matches ? data.matches.map((match, index) => ({
           ...match,
-          date: new Date(match.date),
+          date: match.date, // Keep as string, will be converted in API
           matchNumber: index + 1,
           totalMatches,
           series: data.name,
           seriesType: data.type,
-        }))
+          tournament: data.name,
+          level: data.level,
+          format: match.format
+        })) : []
       };
+
+      console.log('Creating series with data:', seriesData);
 
       const response = await fetch('/api/series', {
         method: 'POST',
@@ -179,9 +190,12 @@ export default function SeriesCreationForm() {
 
       if (response.ok) {
         const result = await response.json();
+        console.log('Series created successfully:', result);
+
+        // Matches are now created directly in the series API
 
         // Create series participation record
-        if (result.series && data.playerTeam && currentPlayer) {
+        if (result.series && playerTeam && currentPlayer) {
           try {
             await fetch('/api/series-participation', {
               method: 'POST',
@@ -189,11 +203,11 @@ export default function SeriesCreationForm() {
               body: JSON.stringify({
                 playerId: currentPlayer._id,
                 seriesId: result.series._id,
-                teamRepresented: data.playerTeam,
+                teamRepresented: playerTeam,
                 teamLevel: data.level,
-                role: data.playerRole || 'batsman',
-                isCaptain: data.isCaptain || false,
-                jerseyNumber: data.jerseyNumber,
+                role: playerRole || 'batsman',
+                isCaptain: isCaptain || false,
+                jerseyNumber: jerseyNumber,
                 status: 'selected'
               }),
             });
@@ -202,17 +216,32 @@ export default function SeriesCreationForm() {
           }
         }
 
-        alert('Series created successfully!');
+        const matchCount = data.matches ? data.matches.length : 0;
+        if (matchCount > 0) {
+          alert(`Series/Tournament "${result.series.name}" created successfully with ${matchCount} matches!`);
+        } else {
+          alert(`Series/Tournament "${result.series.name}" created successfully! You can add matches later using the match data entry form.`);
+        }
         seriesForm.reset();
         setSelectedPreset('');
 
+        // Reset form to default state
+        seriesForm.setValue('teams', [{ name: '', isHome: true }]);
+        seriesForm.setValue('matches', []); // Reset to empty matches array
+
       } else {
-        const errorData = await response.json();
-        alert(errorData.error || 'Error creating series');
+        const errorText = await response.text();
+        console.error('Series creation failed:', errorText);
+        try {
+          const errorData = JSON.parse(errorText);
+          alert(errorData.error || 'Error creating series');
+        } catch {
+          alert('Error creating series: ' + errorText);
+        }
       }
     } catch (error) {
       console.error('Error creating series:', error);
-      alert('Error creating series');
+      alert('Error creating series: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
     setLoading(false);
   };
@@ -290,17 +319,8 @@ export default function SeriesCreationForm() {
       updatePlayerTeam(playerTeam, preset.level);
     }
 
-    // Clear existing matches - don't auto-generate, let user click generate button
-    seriesForm.setValue('matches', [{
-      date: '',
-      venue: '',
-      opponent: '',
-      matchNumber: 1,
-      format: preset.format === 'mixed' ? 'ODI' : preset.format as any,
-      level: preset.level,
-      city: '',
-      country: preset.hostCountry || ''
-    }]);
+    // Clear existing matches - don't auto-generate, let user click generate button or add manually
+    seriesForm.setValue('matches', []);
 
     setSelectedPreset(presetId);
 
@@ -745,16 +765,7 @@ export default function SeriesCreationForm() {
                         // Reset form to default values
                         seriesForm.reset({
                           teams: [{ name: '', isHome: true }],
-                          matches: [{
-                            date: '',
-                            venue: '',
-                            opponent: '',
-                            matchNumber: 1,
-                            format: 'ODI',
-                            level: 'international',
-                            city: '',
-                            country: ''
-                          }]
+                          matches: [] // Reset to empty matches array
                         });
                       } else {
                         applyTournamentPreset(value);
@@ -1087,25 +1098,52 @@ export default function SeriesCreationForm() {
 
                 {/* Matches Section */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium">Matches</h3>
-                    <div className="flex gap-2">
-                      {seriesForm.watch('type') === 'league' && (
-                        <Button type="button" onClick={generateMatches} variant="outline" size="sm">
-                          Generate League Matches
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium">Matches (Optional)</h3>
+                      <div className="flex gap-2">
+                        {seriesForm.watch('type') === 'league' && (
+                          <Button type="button" onClick={generateMatches} variant="outline" size="sm">
+                            Generate League Matches
+                          </Button>
+                        )}
+                        {(seriesForm.watch('type') === 'bilateral' || seriesForm.watch('type') === 'triangular') && (
+                          <Button type="button" onClick={generateMatches} variant="outline" size="sm">
+                            Generate Matches
+                          </Button>
+                        )}
+                        <Button type="button" onClick={addMatch} variant="outline" size="sm">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Match
                         </Button>
-                      )}
-                      {(seriesForm.watch('type') === 'bilateral' || seriesForm.watch('type') === 'triangular') && (
-                        <Button type="button" onClick={generateMatches} variant="outline" size="sm">
-                          Generate Matches
-                        </Button>
-                      )}
-                      <Button type="button" onClick={addMatch} variant="outline" size="sm">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Match
-                      </Button>
+                        {matchFields.length > 0 && (
+                          <Button
+                            type="button"
+                            onClick={() => seriesForm.setValue('matches', [])}
+                            variant="outline"
+                            size="sm"
+                          >
+                            Clear All Matches
+                          </Button>
+                        )}
+                      </div>
                     </div>
+                    <p className="text-sm text-muted-foreground">
+                      You can create a series without matches and add them later using the match data entry form.
+                      All matches added here will be automatically linked to this series/tournament.
+                      {seriesForm.watch('type') === 'league' && ' League matches will be randomized for fair scheduling.'}
+                    </p>
                   </div>
+
+                  {matchFields.length === 0 && (
+                    <div className="p-8 text-center border-2 border-dashed border-muted-foreground/25 rounded-lg">
+                      <Calendar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                      <h4 className="text-lg font-medium mb-2">No matches added yet</h4>
+                      <p className="text-muted-foreground mb-4">
+                        You can create this series without matches and add them later, or use the buttons above to add/generate matches now.
+                      </p>
+                    </div>
+                  )}
 
                   {matchFields.map((field, index) => (
                     <div key={field.id} className="p-4 border rounded-lg space-y-4">
