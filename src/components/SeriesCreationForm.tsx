@@ -145,6 +145,11 @@ export default function SeriesCreationForm() {
   };
 
   const onSubmitSeries = async (data: SeriesFormData) => {
+    // Validate team names for duplicates
+    if (!validateTeamNames()) {
+      return;
+    }
+
     setLoading(true);
     try {
       // Calculate total matches
@@ -199,6 +204,7 @@ export default function SeriesCreationForm() {
 
         alert('Series created successfully!');
         seriesForm.reset();
+        setSelectedPreset('');
 
       } else {
         const errorData = await response.json();
@@ -254,10 +260,16 @@ export default function SeriesCreationForm() {
     if (preset.hostCountry) {
       const countryVenues = getVenuesForFormat(preset.hostCountry, preset.format);
       setAvailableVenues(countryVenues);
+    } else {
+      // Use preset venues if available
+      if (preset.venues && preset.venues.length > 0) {
+        setAvailableVenues(preset.venues);
+      }
     }
 
-    // Apply teams
-    const teams = preset.teams.map((teamName, index) => ({
+    // Apply teams - limit to reasonable number for form
+    const maxTeams = preset.type === 'league' ? Math.min(preset.teams.length, 10) : preset.teams.length;
+    const teams = preset.teams.slice(0, maxTeams).map((teamName, index) => ({
       name: teamName,
       isHome: index === 0 // First team is home team
     }));
@@ -278,40 +290,26 @@ export default function SeriesCreationForm() {
       updatePlayerTeam(playerTeam, preset.level);
     }
 
-    // Generate matches based on preset structure
-    type MatchData = {
-      date: string;
-      venue: string;
-      opponent: string;
-      matchNumber: number;
-      format: 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic';
-      level: 'under19-international' | 'domestic' | 'Ranji' | 'IPL' | 'List-A' | 'international';
-      city?: string;
-      country?: string;
-      importance?: 'high' | 'medium' | 'low';
-      matchType?: 'debut' | 'milestone' | 'final' | 'knockout' | 'regular';
-    };
+    // Clear existing matches - don't auto-generate, let user click generate button
+    seriesForm.setValue('matches', [{
+      date: '',
+      venue: '',
+      opponent: '',
+      matchNumber: 1,
+      format: preset.format === 'mixed' ? 'ODI' : preset.format as any,
+      level: preset.level,
+      city: '',
+      country: preset.hostCountry || ''
+    }]);
 
-    const matches: MatchData[] = [];
-    const totalMatches = preset.structure.totalMatches;
-
-    for (let i = 1; i <= Math.min(totalMatches, 10); i++) { // Limit to 10 matches for demo
-      matches.push({
-        date: '',
-        venue: '',
-        opponent: preset.teams[1] || 'TBD',
-        matchNumber: i,
-        format: preset.format === 'mixed' ? 'ODI' : preset.format as any,
-        level: preset.level,
-        city: '',
-        country: '',
-        importance: i === totalMatches ? 'high' : 'medium',
-        matchType: i === totalMatches ? 'final' : 'regular'
-      });
-    }
-
-    seriesForm.setValue('matches', matches);
     setSelectedPreset(presetId);
+
+    // Show message about generating matches
+    if (preset.type === 'league') {
+      alert(`${preset.name} preset applied! Click "Generate League Matches" to create randomized league fixtures.`);
+    } else {
+      alert(`${preset.name} preset applied! Click "Generate Matches" to create the match schedule.`);
+    }
   };
 
   const toggleDidNotPlay = (matchIndex: number) => {
@@ -339,11 +337,46 @@ export default function SeriesCreationForm() {
       const data = await response.json();
       if (data.success) {
         console.log('Player team updated successfully:', data.message);
+        // Refresh current player data
+        fetchCurrentPlayer();
       } else {
         console.error('Failed to update player team:', data.error);
+        alert(data.error || 'Failed to update player team');
       }
     } catch (error) {
       console.error('Error updating player team:', error);
+      alert('Error updating player team');
+    }
+    setUpdatingTeam(false);
+  };
+
+  const clearAllTeams = async () => {
+    if (!currentPlayer) return;
+
+    if (!confirm('Are you sure you want to clear all team enrollments? This action cannot be undone.')) {
+      return;
+    }
+
+    setUpdatingTeam(true);
+    try {
+      const response = await fetch('/api/players/clear-teams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('All teams cleared successfully!');
+        // Refresh current player data
+        fetchCurrentPlayer();
+        // Clear the player team in the form
+        seriesForm.setValue('playerTeam', '');
+      } else {
+        alert(data.error || 'Failed to clear teams');
+      }
+    } catch (error) {
+      console.error('Error clearing teams:', error);
+      alert('Error clearing teams');
     }
     setUpdatingTeam(false);
   };
@@ -425,6 +458,18 @@ export default function SeriesCreationForm() {
     appendTeam({ name: '', isHome: false });
   };
 
+  const validateTeamNames = () => {
+    const teams = seriesForm.getValues('teams');
+    const teamNames = teams.map(t => t.name.trim().toLowerCase()).filter(name => name);
+    const uniqueNames = new Set(teamNames);
+
+    if (teamNames.length !== uniqueNames.size) {
+      alert('Duplicate team names are not allowed. Please ensure all team names are unique.');
+      return false;
+    }
+    return true;
+  };
+
   const addMatch = () => {
     const matchNumber = matchFields.length + 1;
     const currentFormat = seriesForm.getValues('format');
@@ -471,16 +516,39 @@ export default function SeriesCreationForm() {
     const homeTeamObj = teams.find(t => t.isHome);
     const awayTeams = teams.filter(t => !t.isHome);
 
+    // Shuffle function for randomness
+    const shuffleArray = (array: string[]): string[] => {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    };
+
+    // Shuffle function for matchups
+    const shuffleMatchups = (array: { team1: string; team2: string }[]): { team1: string; team2: string }[] => {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    };
+
     if (seriesType === 'bilateral' && homeTeamObj && awayTeams.length === 1) {
       // Generate bilateral series matches
       const opponent = awayTeams[0].name;
       const matchCount = format === 'Test' ? 3 : format === 'ODI' ? 5 : 3; // Default match counts
 
+      // Shuffle venues for randomness
+      const shuffledVenues = shuffleArray(availableVenues);
+
       for (let i = 1; i <= matchCount; i++) {
         const matchFormat = format === 'mixed' ? (i % 2 === 1 ? 'ODI' : 'T20') : format;
-        // Assign venue from available venues (rotate through them)
-        const venueIndex = (i - 1) % availableVenues.length;
-        const assignedVenue = availableVenues.length > 0 ? availableVenues[venueIndex] : '';
+        // Assign venue from shuffled venues (rotate through them)
+        const venueIndex = (i - 1) % shuffledVenues.length;
+        const assignedVenue = shuffledVenues.length > 0 ? shuffledVenues[venueIndex] : '';
         const venue = venues.find(v => v.name === assignedVenue);
 
         matches.push({
@@ -499,13 +567,16 @@ export default function SeriesCreationForm() {
       const teamNames = teams.map(t => t.name);
       let matchNumber = 1;
 
+      // Shuffle venues for randomness
+      const shuffledVenues = shuffleArray(availableVenues);
+
       // Round robin matches
       for (let i = 0; i < teamNames.length; i++) {
         for (let j = i + 1; j < teamNames.length; j++) {
           const matchFormat = format === 'mixed' ? 'ODI' : format;
-          // Assign venue from available venues
-          const venueIndex = (matchNumber - 1) % availableVenues.length;
-          const assignedVenue = availableVenues.length > 0 ? availableVenues[venueIndex] : '';
+          // Assign venue from shuffled venues
+          const venueIndex = (matchNumber - 1) % shuffledVenues.length;
+          const assignedVenue = shuffledVenues.length > 0 ? shuffledVenues[venueIndex] : '';
           const venue = venues.find(v => v.name === assignedVenue);
 
           matches.push({
@@ -523,8 +594,8 @@ export default function SeriesCreationForm() {
 
       // Final match
       const finalFormat = format === 'mixed' ? 'ODI' : format;
-      const finalVenueIndex = (matchNumber - 1) % availableVenues.length;
-      const finalVenue = availableVenues.length > 0 ? availableVenues[finalVenueIndex] : '';
+      const finalVenueIndex = (matchNumber - 1) % shuffledVenues.length;
+      const finalVenue = shuffledVenues.length > 0 ? shuffledVenues[finalVenueIndex] : '';
       const finalVenueObj = venues.find(v => v.name === finalVenue);
 
       matches.push({
@@ -538,10 +609,83 @@ export default function SeriesCreationForm() {
         country: finalVenueObj?.country || seriesForm.getValues('hostCountry') || '',
         matchType: 'final'
       });
+    } else if (seriesType === 'league' && teams.length >= 4) {
+      // Generate league matches with randomness - only for league type
+      const teamNames = teams.map(t => t.name);
+      const playerTeam = seriesForm.getValues('playerTeam');
+      let matchNumber = 1;
+
+      // Shuffle venues for randomness
+      const shuffledVenues = shuffleArray(availableVenues);
+
+      // Generate round-robin matches with randomness
+      const allMatchups: { team1: string; team2: string }[] = [];
+
+      // Create all possible matchups
+      for (let i = 0; i < teamNames.length; i++) {
+        for (let j = i + 1; j < teamNames.length; j++) {
+          allMatchups.push({ team1: teamNames[i], team2: teamNames[j] });
+        }
+      }
+
+      // Shuffle matchups for random order
+      const shuffledMatchups = shuffleMatchups(allMatchups);
+
+      // Generate matches from shuffled matchups
+      shuffledMatchups.forEach((matchup) => {
+        const matchFormat = format === 'mixed' ? (Math.random() > 0.5 ? 'ODI' : 'T20') : format;
+        const venueIndex = (matchNumber - 1) % shuffledVenues.length;
+        const assignedVenue = shuffledVenues.length > 0 ? shuffledVenues[venueIndex] : '';
+        const venue = venues.find(v => v.name === assignedVenue);
+
+        // Determine opponent based on player's team
+        const opponent = matchup.team1 === playerTeam ? matchup.team2 : matchup.team1;
+
+        // Only add matches where player's team is involved
+        if (matchup.team1 === playerTeam || matchup.team2 === playerTeam) {
+          matches.push({
+            date: '',
+            venue: assignedVenue,
+            opponent,
+            matchNumber: matchNumber++,
+            format: matchFormat as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic',
+            level,
+            city: venue?.city || '',
+            country: venue?.country || seriesForm.getValues('hostCountry') || '',
+            importance: Math.random() > 0.7 ? 'high' : Math.random() > 0.4 ? 'medium' : 'low'
+          });
+        }
+      });
+
+      // Add playoff matches if it's a league
+      if (matches.length > 0) {
+        const playoffVenueIndex = matchNumber % shuffledVenues.length;
+        const playoffVenue = shuffledVenues.length > 0 ? shuffledVenues[playoffVenueIndex] : '';
+        const playoffVenueObj = venues.find(v => v.name === playoffVenue);
+
+        matches.push({
+          date: '',
+          venue: playoffVenue,
+          opponent: 'TBD (Playoff)',
+          matchNumber: matchNumber,
+          format: format === 'mixed' ? 'T20' : format as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic',
+          level,
+          city: playoffVenueObj?.city || '',
+          country: playoffVenueObj?.country || seriesForm.getValues('hostCountry') || '',
+          matchType: 'knockout',
+          importance: 'high'
+        });
+      }
+    }
+
+    if (matches.length === 0) {
+      alert('Unable to generate matches. Please check your tournament configuration.');
+      return;
     }
 
     // Clear existing matches and add generated ones
     seriesForm.setValue('matches', matches);
+    alert(`Generated ${matches.length} matches successfully!`);
   };
 
   return (
@@ -808,6 +952,20 @@ export default function SeriesCreationForm() {
                     Player Team Representation
                   </h3>
                   <div className="p-4 bg-muted/50 rounded-lg">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="text-sm text-muted-foreground">
+                        Note: Selecting a new team will clear all previous team enrollments to prevent duplicates.
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={clearAllTeams}
+                        variant="outline"
+                        size="sm"
+                        disabled={updatingTeam}
+                      >
+                        Clear All Teams
+                      </Button>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label>Playing For Team *</Label>
@@ -932,9 +1090,16 @@ export default function SeriesCreationForm() {
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-medium">Matches</h3>
                     <div className="flex gap-2">
-                      <Button type="button" onClick={generateMatches} variant="outline" size="sm">
-                        Generate Matches
-                      </Button>
+                      {seriesForm.watch('type') === 'league' && (
+                        <Button type="button" onClick={generateMatches} variant="outline" size="sm">
+                          Generate League Matches
+                        </Button>
+                      )}
+                      {(seriesForm.watch('type') === 'bilateral' || seriesForm.watch('type') === 'triangular') && (
+                        <Button type="button" onClick={generateMatches} variant="outline" size="sm">
+                          Generate Matches
+                        </Button>
+                      )}
                       <Button type="button" onClick={addMatch} variant="outline" size="sm">
                         <Plus className="w-4 h-4 mr-2" />
                         Add Match

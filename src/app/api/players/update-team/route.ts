@@ -39,9 +39,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Close any existing active teams at the same level
+    // Clear ALL existing teams (close all active teams)
     activePlayer.teams.forEach(team => {
-      if (team.level === teamLevel && !team.to) {
+      if (!team.to) {
         team.to = currentDate;
       }
     });
