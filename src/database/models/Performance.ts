@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IPerformance extends Document {
   match: mongoose.Types.ObjectId;
   player: mongoose.Types.ObjectId;
-  
+
   // Team representation
   teamRepresented: string; // Which team the player was playing for in this match
   teamLevel: "under19-international" | "domestic" | "Ranji" | "IPL" | "List-A" | "international";
@@ -81,6 +81,12 @@ export interface IPerformance extends Document {
     lbwWickets?: number;
     stumpedWickets?: number;
   };
+
+  // Flags to indicate if player did not bat/bowl in specific innings
+  didNotBatFirstInnings?: boolean;
+  didNotBatSecondInnings?: boolean;
+  didNotBowlFirstInnings?: boolean;
+  didNotBowlSecondInnings?: boolean;
 
   // Legacy batting performance (for single innings matches)
   runs?: number;
@@ -221,13 +227,13 @@ const PerformanceSchema = new Schema<IPerformance>(
   {
     match: { type: Schema.Types.ObjectId, ref: "Match", required: true },
     player: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    
+
     // Team representation
     teamRepresented: { type: String, required: true },
-    teamLevel: { 
-      type: String, 
-      enum: ["under19-international", "domestic", "Ranji", "IPL", "List-A", "international"], 
-      required: true 
+    teamLevel: {
+      type: String,
+      enum: ["under19-international", "domestic", "Ranji", "IPL", "List-A", "international"],
+      required: true
     },
 
     // Match context
@@ -303,6 +309,12 @@ const PerformanceSchema = new Schema<IPerformance>(
       lbwWickets: Number,
       stumpedWickets: Number,
     },
+
+    // Flags to indicate if player did not bat/bowl in specific innings
+    didNotBatFirstInnings: { type: Boolean, default: false },
+    didNotBatSecondInnings: { type: Boolean, default: false },
+    didNotBowlFirstInnings: { type: Boolean, default: false },
+    didNotBowlSecondInnings: { type: Boolean, default: false },
 
     // Legacy batting performance (for single innings matches)
     runs: Number,

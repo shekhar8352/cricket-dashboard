@@ -76,126 +76,146 @@ const matchSchema = z.object({
   matchType: z.enum(['debut', 'milestone', 'final', 'knockout', 'regular']).optional(),
 });
 
+// Helper for optional numbers that might be NaN (from empty inputs with valueAsNumber: true)
+const optionalNumber = z.preprocess(
+  (val) => (typeof val === 'number' && isNaN(val) ? undefined : val),
+  z.number().optional()
+);
+
+const optionalPositiveNumber = z.preprocess(
+  (val) => (typeof val === 'number' && isNaN(val) ? undefined : val),
+  z.number().min(0).optional()
+);
+
 const performanceSchema = z.object({
   matchId: z.string().min(1, 'Match selection is required'),
 
   // Match context
-  battingPosition: z.number().optional(),
+  battingPosition: optionalNumber,
   bowlingPosition: z.enum(['opening', 'middle', 'death']).optional(),
-  innings: z.number().min(1).max(4).optional(), // Extended to 4 for Test matches
+  innings: z.preprocess(
+    (val) => (typeof val === 'number' && isNaN(val) ? undefined : val),
+    z.number().min(1).max(4).optional()
+  ), // Extended to 4 for Test matches
   isChasing: z.boolean().optional(),
-  target: z.number().optional(),
-  requiredRunRate: z.number().optional(),
+  target: optionalNumber,
+  requiredRunRate: optionalNumber,
   isCaptain: z.boolean().optional(),
   isWicketKeeper: z.boolean().optional(),
   fieldingPosition: z.string().optional(),
 
   // Batting performance (can be innings-specific)
   firstInnings: z.object({
-    runs: z.number().min(0).optional(),
-    ballsFaced: z.number().min(0).optional(),
-    fours: z.number().min(0).optional(),
-    sixes: z.number().min(0).optional(),
-    singles: z.number().min(0).optional(),
-    twos: z.number().min(0).optional(),
-    threes: z.number().min(0).optional(),
-    dotBalls: z.number().min(0).optional(),
+    runs: optionalPositiveNumber,
+    ballsFaced: optionalPositiveNumber,
+    fours: optionalPositiveNumber,
+    sixes: optionalPositiveNumber,
+    singles: optionalPositiveNumber,
+    twos: optionalPositiveNumber,
+    threes: optionalPositiveNumber,
+    dotBalls: optionalPositiveNumber,
     dismissalType: z.string().optional(),
     dismissalBowler: z.string().optional(),
     dismissalFielder: z.string().optional(),
-    dismissalOver: z.number().optional(),
-    dismissalBall: z.number().optional(),
+    dismissalOver: optionalNumber,
+    dismissalBall: optionalNumber,
   }).optional(),
 
   secondInnings: z.object({
-    runs: z.number().min(0).optional(),
-    ballsFaced: z.number().min(0).optional(),
-    fours: z.number().min(0).optional(),
-    sixes: z.number().min(0).optional(),
-    singles: z.number().min(0).optional(),
-    twos: z.number().min(0).optional(),
-    threes: z.number().min(0).optional(),
-    dotBalls: z.number().min(0).optional(),
+    runs: optionalPositiveNumber,
+    ballsFaced: optionalPositiveNumber,
+    fours: optionalPositiveNumber,
+    sixes: optionalPositiveNumber,
+    singles: optionalPositiveNumber,
+    twos: optionalPositiveNumber,
+    threes: optionalPositiveNumber,
+    dotBalls: optionalPositiveNumber,
     dismissalType: z.string().optional(),
     dismissalBowler: z.string().optional(),
     dismissalFielder: z.string().optional(),
-    dismissalOver: z.number().optional(),
-    dismissalBall: z.number().optional(),
+    dismissalOver: optionalNumber,
+    dismissalBall: optionalNumber,
   }).optional(),
 
   // Legacy fields for single innings matches (ODI, T20)
-  runs: z.number().min(0).optional(),
-  ballsFaced: z.number().min(0).optional(),
-  fours: z.number().min(0).optional(),
-  sixes: z.number().min(0).optional(),
-  singles: z.number().min(0).optional(),
-  twos: z.number().min(0).optional(),
-  threes: z.number().min(0).optional(),
-  dotBalls: z.number().min(0).optional(),
+  runs: optionalPositiveNumber,
+  ballsFaced: optionalPositiveNumber,
+  fours: optionalPositiveNumber,
+  sixes: optionalPositiveNumber,
+  singles: optionalPositiveNumber,
+  twos: optionalPositiveNumber,
+  threes: optionalPositiveNumber,
+  dotBalls: optionalPositiveNumber,
 
   // Batting phases (for limited overs)
-  powerplayRuns: z.number().min(0).optional(),
-  powerplayBalls: z.number().min(0).optional(),
-  middleOversRuns: z.number().min(0).optional(),
-  middleOversBalls: z.number().min(0).optional(),
-  deathOversRuns: z.number().min(0).optional(),
-  deathOversBalls: z.number().min(0).optional(),
+  powerplayRuns: optionalPositiveNumber,
+  powerplayBalls: optionalPositiveNumber,
+  middleOversRuns: optionalPositiveNumber,
+  middleOversBalls: optionalPositiveNumber,
+  deathOversRuns: optionalPositiveNumber,
+  deathOversBalls: optionalPositiveNumber,
 
   // Dismissal (for single innings)
   dismissalType: z.string().optional(),
   dismissalBowler: z.string().optional(),
   dismissalFielder: z.string().optional(),
-  dismissalOver: z.number().optional(),
-  dismissalBall: z.number().optional(),
+  dismissalOver: optionalNumber,
+  dismissalBall: optionalNumber,
 
   // Bowling performance (can be innings-specific)
   firstInningsBowling: z.object({
-    overs: z.number().min(0).optional(),
-    maidens: z.number().min(0).optional(),
-    runsConceded: z.number().min(0).optional(),
-    wickets: z.number().min(0).optional(),
-    dotBallsBowled: z.number().min(0).optional(),
-    wides: z.number().min(0).optional(),
-    noBalls: z.number().min(0).optional(),
-    caughtWickets: z.number().min(0).optional(),
-    bowledWickets: z.number().min(0).optional(),
-    lbwWickets: z.number().min(0).optional(),
-    stumpedWickets: z.number().min(0).optional(),
+    overs: optionalPositiveNumber,
+    maidens: optionalPositiveNumber,
+    runsConceded: optionalPositiveNumber,
+    wickets: optionalPositiveNumber,
+    dotBallsBowled: optionalPositiveNumber,
+    wides: optionalPositiveNumber,
+    noBalls: optionalPositiveNumber,
+    caughtWickets: optionalPositiveNumber,
+    bowledWickets: optionalPositiveNumber,
+    lbwWickets: optionalPositiveNumber,
+    stumpedWickets: optionalPositiveNumber,
   }).optional(),
 
   secondInningsBowling: z.object({
-    overs: z.number().min(0).optional(),
-    maidens: z.number().min(0).optional(),
-    runsConceded: z.number().min(0).optional(),
-    wickets: z.number().min(0).optional(),
-    dotBallsBowled: z.number().min(0).optional(),
-    wides: z.number().min(0).optional(),
-    noBalls: z.number().min(0).optional(),
-    caughtWickets: z.number().min(0).optional(),
-    bowledWickets: z.number().min(0).optional(),
-    lbwWickets: z.number().min(0).optional(),
-    stumpedWickets: z.number().min(0).optional(),
+    overs: optionalPositiveNumber,
+    maidens: optionalPositiveNumber,
+    runsConceded: optionalPositiveNumber,
+    wickets: optionalPositiveNumber,
+    dotBallsBowled: optionalPositiveNumber,
+    wides: optionalPositiveNumber,
+    noBalls: optionalPositiveNumber,
+    caughtWickets: optionalPositiveNumber,
+    bowledWickets: optionalPositiveNumber,
+    lbwWickets: optionalPositiveNumber,
+    stumpedWickets: optionalPositiveNumber,
   }).optional(),
 
+  // Flags to indicate if player did not bat/bowl in specific innings
+  didNotBatFirstInnings: z.boolean().optional(),
+  didNotBatSecondInnings: z.boolean().optional(),
+  didNotBowlFirstInnings: z.boolean().optional(),
+  didNotBowlSecondInnings: z.boolean().optional(),
+
   // Legacy bowling fields for single innings matches
-  overs: z.number().min(0).optional(),
-  maidens: z.number().min(0).optional(),
-  runsConceded: z.number().min(0).optional(),
-  wickets: z.number().min(0).optional(),
-  dotBallsBowled: z.number().min(0).optional(),
-  wides: z.number().min(0).optional(),
-  noBalls: z.number().min(0).optional(),
+  overs: optionalPositiveNumber,
+  maidens: optionalPositiveNumber,
+  runsConceded: optionalPositiveNumber,
+  wickets: optionalPositiveNumber,
+  dotBallsBowled: optionalPositiveNumber,
+  wides: optionalPositiveNumber,
+  noBalls: optionalPositiveNumber,
 
   // Wicket types (legacy)
-  caughtWickets: z.number().min(0).optional(),
-  bowledWickets: z.number().min(0).optional(),
-  lbwWickets: z.number().min(0).optional(),
-  stumpedWickets: z.number().min(0).optional(),
+  caughtWickets: optionalPositiveNumber,
+  bowledWickets: optionalPositiveNumber,
+  lbwWickets: optionalPositiveNumber,
+  stumpedWickets: optionalPositiveNumber,
 
   // Fielding
-  catches: z.number().min(0).optional(),
-  stumpings: z.number().min(0).optional(),
-  runOuts: z.number().min(0).optional(),
+  catches: optionalPositiveNumber,
+  stumpings: optionalPositiveNumber,
+  runOuts: optionalPositiveNumber,
 });
 
 // Schema for updating existing player (only teams and career end date)
@@ -230,6 +250,12 @@ export default function DataEntryPage() {
     level: string;
   }>>([]);
   const [loading, setLoading] = useState(false);
+
+  // Track "did not bat/bowl" checkbox states
+  const [didNotBatFirstInnings, setDidNotBatFirstInnings] = useState(false);
+  const [didNotBatSecondInnings, setDidNotBatSecondInnings] = useState(false);
+  const [didNotBowlFirstInnings, setDidNotBowlFirstInnings] = useState(false);
+  const [didNotBowlSecondInnings, setDidNotBowlSecondInnings] = useState(false);
   const [existingPlayer, setExistingPlayer] = useState<{
     _id: string;
     fullName: string;
@@ -277,7 +303,7 @@ export default function DataEntryPage() {
     format: string;
     level: string;
   }>>([]);
-  const [selectedMatchFormat, setSelectedMatchFormat] = useState<string>('');
+  const [selectedMatchFormat, setSelectedMatchFormat] = useState<'Test' | 'First-class' | 'ODI' | 'T20' | 'T20-domestic' | 'List-A' | null>(null);
   const [matchCreationStep, setMatchCreationStep] = useState<'series' | 'venue' | 'conditions' | 'details'>('series');
   const [selectedSeries, setSelectedSeries] = useState<{
     _id: string;
@@ -318,7 +344,7 @@ export default function DataEntryPage() {
   });
 
   const performanceForm = useForm<PerformanceFormData>({
-    resolver: zodResolver(performanceSchema),
+    resolver: zodResolver(performanceSchema) as any,
     defaultValues: {
       matchId: '',
     },
@@ -1594,7 +1620,7 @@ export default function DataEntryPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={performanceForm?.handleSubmit ? performanceForm.handleSubmit(onSubmitPerformance) : (e) => e.preventDefault()} className="space-y-8">
+                <form onSubmit={performanceForm?.handleSubmit ? performanceForm.handleSubmit(onSubmitPerformance, (errors) => console.error('Form validation errors:', errors)) : (e) => e.preventDefault()} className="space-y-8">
                   {/* Match Selection */}
                   <div className="space-y-2">
                     <Label>Select Match *</Label>
@@ -1602,7 +1628,7 @@ export default function DataEntryPage() {
                       performanceForm.setValue('matchId', value);
                       const selectedMatch = matches.find(m => m._id === value);
                       if (selectedMatch) {
-                        setSelectedMatchFormat(selectedMatch.format);
+                        setSelectedMatchFormat(selectedMatch.format as 'Test' | 'First-class' | 'ODI' | 'T20' | 'T20-domestic' | 'List-A');
                       }
                     }}>
                       <SelectTrigger>
@@ -1750,338 +1776,387 @@ export default function DataEntryPage() {
                       <div className="space-y-6">
                         {/* First Innings Batting */}
                         <div className="space-y-4">
-                          <h4 className="text-md font-medium">First Innings Batting</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="firstInnings.runs">Runs</Label>
-                              <Input
-                                id="firstInnings.runs"
-                                type="number"
-                                {...performanceForm.register('firstInnings.runs', { valueAsNumber: true })}
-                                min="0"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="firstInnings.ballsFaced">Balls Faced</Label>
-                              <Input
-                                id="firstInnings.ballsFaced"
-                                type="number"
-                                {...performanceForm.register('firstInnings.ballsFaced', { valueAsNumber: true })}
-                                min="0"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="firstInnings.fours">Fours</Label>
-                              <Input
-                                id="firstInnings.fours"
-                                type="number"
-                                {...performanceForm.register('firstInnings.fours', { valueAsNumber: true })}
-                                min="0"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="firstInnings.sixes">Sixes</Label>
-                              <Input
-                                id="firstInnings.sixes"
-                                type="number"
-                                {...performanceForm.register('firstInnings.sixes', { valueAsNumber: true })}
-                                min="0"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Dismissal Type</Label>
-                              <Select onValueChange={(value) => performanceForm.setValue('firstInnings.dismissalType', value)}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select dismissal" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="not_out">Not Out</SelectItem>
-                                  <SelectItem value="caught">Caught</SelectItem>
-                                  <SelectItem value="bowled">Bowled</SelectItem>
-                                  <SelectItem value="lbw">LBW</SelectItem>
-                                  <SelectItem value="run_out">Run Out</SelectItem>
-                                  <SelectItem value="stumped">Stumped</SelectItem>
-                                  <SelectItem value="hit_wicket">Hit Wicket</SelectItem>
-                                  <SelectItem value="retired">Retired</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="firstInnings.dismissalBowler">Dismissal Bowler</Label>
-                              <Input
-                                id="firstInnings.dismissalBowler"
-                                {...performanceForm.register('firstInnings.dismissalBowler')}
-                                placeholder="Bowler name"
-                              />
-                            </div>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id="didNotBatFirstInnings"
+                              checked={didNotBatFirstInnings}
+                              onChange={(e) => {
+                                setDidNotBatFirstInnings(e.target.checked);
+                                performanceForm.setValue('didNotBatFirstInnings', e.target.checked);
+                                if (e.target.checked) {
+                                  // Clear first innings batting fields when checked
+                                  performanceForm.setValue('firstInnings', undefined);
+                                }
+                              }}
+                              className="h-4 w-4"
+                            />
+                            <Label htmlFor="didNotBatFirstInnings" className="text-sm font-normal cursor-pointer">
+                              Did not bat in first innings
+                            </Label>
                           </div>
+
+                          {!didNotBatFirstInnings && (
+                            <>
+                              <h4 className="text-md font-medium">First Innings Batting</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="firstInnings.runs">Runs</Label>
+                                  <Input
+                                    id="firstInnings.runs"
+                                    type="number"
+                                    {...performanceForm.register('firstInnings.runs', { valueAsNumber: true })}
+                                    min="0"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="firstInnings.ballsFaced">Balls Faced</Label>
+                                  <Input
+                                    id="firstInnings.ballsFaced"
+                                    type="number"
+                                    {...performanceForm.register('firstInnings.ballsFaced', { valueAsNumber: true })}
+                                    min="0"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="firstInnings.fours">Fours</Label>
+                                  <Input
+                                    id="firstInnings.fours"
+                                    type="number"
+                                    {...performanceForm.register('firstInnings.fours', { valueAsNumber: true })}
+                                    min="0"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="firstInnings.sixes">Sixes</Label>
+                                  <Input
+                                    id="firstInnings.sixes"
+                                    type="number"
+                                    {...performanceForm.register('firstInnings.sixes', { valueAsNumber: true })}
+                                    min="0"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Dismissal Type</Label>
+                                  <Select onValueChange={(value) => performanceForm.setValue('firstInnings.dismissalType', value)}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select dismissal" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="not_out">Not Out</SelectItem>
+                                      <SelectItem value="caught">Caught</SelectItem>
+                                      <SelectItem value="bowled">Bowled</SelectItem>
+                                      <SelectItem value="lbw">LBW</SelectItem>
+                                      <SelectItem value="run_out">Run Out</SelectItem>
+                                      <SelectItem value="stumped">Stumped</SelectItem>
+                                      <SelectItem value="hit_wicket">Hit Wicket</SelectItem>
+                                      <SelectItem value="retired">Retired</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="firstInnings.dismissalBowler">Dismissal Bowler</Label>
+                                  <Input
+                                    id="firstInnings.dismissalBowler"
+                                    {...performanceForm.register('firstInnings.dismissalBowler')}
+                                    placeholder="Bowler name"
+                                  />
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
 
                         {/* Second Innings Batting */}
                         <div className="space-y-4">
-                          <h4 className="text-md font-medium">Second Innings Batting</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="secondInnings.runs">Runs</Label>
-                              <Input
-                                id="secondInnings.runs"
-                                type="number"
-                                {...performanceForm.register('secondInnings.runs', { valueAsNumber: true })}
-                                min="0"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="secondInnings.ballsFaced">Balls Faced</Label>
-                              <Input
-                                id="secondInnings.ballsFaced"
-                                type="number"
-                                {...performanceForm.register('secondInnings.ballsFaced', { valueAsNumber: true })}
-                                min="0"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="secondInnings.fours">Fours</Label>
-                              <Input
-                                id="secondInnings.fours"
-                                type="number"
-                                {...performanceForm.register('secondInnings.fours', { valueAsNumber: true })}
-                                min="0"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="secondInnings.sixes">Sixes</Label>
-                              <Input
-                                id="secondInnings.sixes"
-                                type="number"
-                                {...performanceForm.register('secondInnings.sixes', { valueAsNumber: true })}
-                                min="0"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Dismissal Type</Label>
-                              <Select onValueChange={(value) => performanceForm.setValue('secondInnings.dismissalType', value)}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select dismissal" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="not_out">Not Out</SelectItem>
-                                  <SelectItem value="caught">Caught</SelectItem>
-                                  <SelectItem value="bowled">Bowled</SelectItem>
-                                  <SelectItem value="lbw">LBW</SelectItem>
-                                  <SelectItem value="run_out">Run Out</SelectItem>
-                                  <SelectItem value="stumped">Stumped</SelectItem>
-                                  <SelectItem value="hit_wicket">Hit Wicket</SelectItem>
-                                  <SelectItem value="retired">Retired</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="secondInnings.dismissalBowler">Dismissal Bowler</Label>
-                              <Input
-                                id="secondInnings.dismissalBowler"
-                                {...performanceForm.register('secondInnings.dismissalBowler')}
-                                placeholder="Bowler name"
-                              />
-                            </div>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id="didNotBatSecondInnings"
+                              checked={didNotBatSecondInnings}
+                              onChange={(e) => {
+                                setDidNotBatSecondInnings(e.target.checked);
+                                performanceForm.setValue('didNotBatSecondInnings', e.target.checked);
+                                if (e.target.checked) {
+                                  performanceForm.setValue('secondInnings', undefined);
+                                }
+                              }}
+                              className="h-4 w-4"
+                            />
+                            <Label htmlFor="didNotBatSecondInnings" className="text-sm font-normal cursor-pointer">
+                              Did not bat in second innings
+                            </Label>
                           </div>
+
+                          {!didNotBatSecondInnings && (
+                            <>
+                              <h4 className="text-md font-medium">Second Innings Batting</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="secondInnings.runs">Runs</Label>
+                                  <Input
+                                    id="secondInnings.runs"
+                                    type="number"
+                                    {...performanceForm.register('secondInnings.runs', { valueAsNumber: true })}
+                                    min="0"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="secondInnings.ballsFaced">Balls Faced</Label>
+                                  <Input
+                                    id="secondInnings.ballsFaced"
+                                    type="number"
+                                    {...performanceForm.register('secondInnings.ballsFaced', { valueAsNumber: true })}
+                                    min="0"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="secondInnings.fours">Fours</Label>
+                                  <Input
+                                    id="secondInnings.fours"
+                                    type="number"
+                                    {...performanceForm.register('secondInnings.fours', { valueAsNumber: true })}
+                                    min="0"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="secondInnings.sixes">Sixes</Label>
+                                  <Input
+                                    id="secondInnings.sixes"
+                                    type="number"
+                                    {...performanceForm.register('secondInnings.sixes', { valueAsNumber: true })}
+                                    min="0"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Dismissal Type</Label>
+                                  <Select onValueChange={(value) => performanceForm.setValue('secondInnings.dismissalType', value)}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select dismissal" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="not_out">Not Out</SelectItem>
+                                      <SelectItem value="caught">Caught</SelectItem>
+                                      <SelectItem value="bowled">Bowled</SelectItem>
+                                      <SelectItem value="lbw">LBW</SelectItem>
+                                      <SelectItem value="run_out">Run Out</SelectItem>
+                                      <SelectItem value="stumped">Stumped</SelectItem>
+                                      <SelectItem value="hit_wicket">Hit Wicket</SelectItem>
+                                      <SelectItem value="retired">Retired</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="secondInnings.dismissalBowler">Dismissal Bowler</Label>
+                                  <Input
+                                    id="secondInnings.dismissalBowler"
+                                    {...performanceForm.register('secondInnings.dismissalBowler')}
+                                    placeholder="Bowler name"
+                                  />
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     ) : (
                       // Single innings batting for limited overs matches
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="runs">Runs</Label>
-                          <Input
-                            id="runs"
-                            type="number"
-                            {...performanceForm.register('runs', { valueAsNumber: true })}
-                            min="0"
-                          />
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="runs">Runs</Label>
+                            <Input
+                              id="runs"
+                              type="number"
+                              {...performanceForm.register('runs', { valueAsNumber: true })}
+                              min="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="ballsFaced">Balls Faced</Label>
+                            <Input
+                              id="ballsFaced"
+                              type="number"
+                              {...performanceForm.register('ballsFaced', { valueAsNumber: true })}
+                              min="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="fours">Fours</Label>
+                            <Input
+                              id="fours"
+                              type="number"
+                              {...performanceForm.register('fours', { valueAsNumber: true })}
+                              min="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="sixes">Sixes</Label>
+                            <Input
+                              id="sixes"
+                              type="number"
+                              {...performanceForm.register('sixes', { valueAsNumber: true })}
+                              min="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="singles">Singles</Label>
+                            <Input
+                              id="singles"
+                              type="number"
+                              {...performanceForm.register('singles', { valueAsNumber: true })}
+                              min="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="twos">Twos</Label>
+                            <Input
+                              id="twos"
+                              type="number"
+                              {...performanceForm.register('twos', { valueAsNumber: true })}
+                              min="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="threes">Threes</Label>
+                            <Input
+                              id="threes"
+                              type="number"
+                              {...performanceForm.register('threes', { valueAsNumber: true })}
+                              min="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="dotBalls">Dot Balls</Label>
+                            <Input
+                              id="dotBalls"
+                              type="number"
+                              {...performanceForm.register('dotBalls', { valueAsNumber: true })}
+                              min="0"
+                            />
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="ballsFaced">Balls Faced</Label>
-                          <Input
-                            id="ballsFaced"
-                            type="number"
-                            {...performanceForm.register('ballsFaced', { valueAsNumber: true })}
-                            min="0"
-                          />
+
+                        {/* Batting Phases */}
+                        <h4 className="text-md font-medium mt-6">Batting by Phases</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="powerplayRuns">Powerplay Runs</Label>
+                            <Input
+                              id="powerplayRuns"
+                              type="number"
+                              {...performanceForm.register('powerplayRuns', { valueAsNumber: true })}
+                              min="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="powerplayBalls">Powerplay Balls</Label>
+                            <Input
+                              id="powerplayBalls"
+                              type="number"
+                              {...performanceForm.register('powerplayBalls', { valueAsNumber: true })}
+                              min="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="middleOversRuns">Middle Overs Runs</Label>
+                            <Input
+                              id="middleOversRuns"
+                              type="number"
+                              {...performanceForm.register('middleOversRuns', { valueAsNumber: true })}
+                              min="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="middleOversBalls">Middle Overs Balls</Label>
+                            <Input
+                              id="middleOversBalls"
+                              type="number"
+                              {...performanceForm.register('middleOversBalls', { valueAsNumber: true })}
+                              min="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="deathOversRuns">Death Overs Runs</Label>
+                            <Input
+                              id="deathOversRuns"
+                              type="number"
+                              {...performanceForm.register('deathOversRuns', { valueAsNumber: true })}
+                              min="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="deathOversBalls">Death Overs Balls</Label>
+                            <Input
+                              id="deathOversBalls"
+                              type="number"
+                              {...performanceForm.register('deathOversBalls', { valueAsNumber: true })}
+                              min="0"
+                            />
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="fours">Fours</Label>
-                          <Input
-                            id="fours"
-                            type="number"
-                            {...performanceForm.register('fours', { valueAsNumber: true })}
-                            min="0"
-                          />
+
+                        {/* Dismissal Details */}
+                        <h4 className="text-md font-medium mt-6">Dismissal Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label>Dismissal Type</Label>
+                            <Select onValueChange={(value) => performanceForm.setValue('dismissalType', value)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select dismissal" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="not_out">Not Out</SelectItem>
+                                <SelectItem value="caught">Caught</SelectItem>
+                                <SelectItem value="bowled">Bowled</SelectItem>
+                                <SelectItem value="lbw">LBW</SelectItem>
+                                <SelectItem value="run_out">Run Out</SelectItem>
+                                <SelectItem value="stumped">Stumped</SelectItem>
+                                <SelectItem value="hit_wicket">Hit Wicket</SelectItem>
+                                <SelectItem value="retired">Retired</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="dismissalBowler">Dismissal Bowler</Label>
+                            <Input
+                              id="dismissalBowler"
+                              {...performanceForm.register('dismissalBowler')}
+                              placeholder="Bowler name"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="dismissalFielder">Dismissal Fielder</Label>
+                            <Input
+                              id="dismissalFielder"
+                              {...performanceForm.register('dismissalFielder')}
+                              placeholder="Fielder name"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="dismissalOver">Dismissal Over</Label>
+                            <Input
+                              id="dismissalOver"
+                              type="number"
+                              {...performanceForm.register('dismissalOver', { valueAsNumber: true })}
+                              min="1"
+                              placeholder="e.g., 15"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="dismissalBall">Dismissal Ball</Label>
+                            <Input
+                              id="dismissalBall"
+                              type="number"
+                              {...performanceForm.register('dismissalBall', { valueAsNumber: true })}
+                              min="1"
+                              max="6"
+                              placeholder="e.g., 3"
+                            />
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="sixes">Sixes</Label>
-                          <Input
-                            id="sixes"
-                            type="number"
-                            {...performanceForm.register('sixes', { valueAsNumber: true })}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="singles">Singles</Label>
-                          <Input
-                            id="singles"
-                            type="number"
-                            {...performanceForm.register('singles', { valueAsNumber: true })}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="twos">Twos</Label>
-                          <Input
-                            id="twos"
-                            type="number"
-                            {...performanceForm.register('twos', { valueAsNumber: true })}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="threes">Threes</Label>
-                          <Input
-                            id="threes"
-                            type="number"
-                            {...performanceForm.register('threes', { valueAsNumber: true })}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="dotBalls">Dot Balls</Label>
-                          <Input
-                            id="dotBalls"
-                            type="number"
-                            {...performanceForm.register('dotBalls', { valueAsNumber: true })}
-                            min="0"
-                          />
-                        </div>
-                      </div>
+                      </>
                     )}
-
-                    {/* Batting Phases */}
-                    <h4 className="text-md font-medium mt-6">Batting by Phases</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="powerplayRuns">Powerplay Runs</Label>
-                        <Input
-                          id="powerplayRuns"
-                          type="number"
-                          {...performanceForm.register('powerplayRuns', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="powerplayBalls">Powerplay Balls</Label>
-                        <Input
-                          id="powerplayBalls"
-                          type="number"
-                          {...performanceForm.register('powerplayBalls', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="middleOversRuns">Middle Overs Runs</Label>
-                        <Input
-                          id="middleOversRuns"
-                          type="number"
-                          {...performanceForm.register('middleOversRuns', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="middleOversBalls">Middle Overs Balls</Label>
-                        <Input
-                          id="middleOversBalls"
-                          type="number"
-                          {...performanceForm.register('middleOversBalls', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="deathOversRuns">Death Overs Runs</Label>
-                        <Input
-                          id="deathOversRuns"
-                          type="number"
-                          {...performanceForm.register('deathOversRuns', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="deathOversBalls">Death Overs Balls</Label>
-                        <Input
-                          id="deathOversBalls"
-                          type="number"
-                          {...performanceForm.register('deathOversBalls', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Dismissal Details */}
-                    <h4 className="text-md font-medium mt-6">Dismissal Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label>Dismissal Type</Label>
-                        <Select onValueChange={(value) => performanceForm.setValue('dismissalType', value)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select dismissal" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="not_out">Not Out</SelectItem>
-                            <SelectItem value="caught">Caught</SelectItem>
-                            <SelectItem value="bowled">Bowled</SelectItem>
-                            <SelectItem value="lbw">LBW</SelectItem>
-                            <SelectItem value="run_out">Run Out</SelectItem>
-                            <SelectItem value="stumped">Stumped</SelectItem>
-                            <SelectItem value="hit_wicket">Hit Wicket</SelectItem>
-                            <SelectItem value="retired">Retired</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="dismissalBowler">Dismissal Bowler</Label>
-                        <Input
-                          id="dismissalBowler"
-                          {...performanceForm.register('dismissalBowler')}
-                          placeholder="Bowler name"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="dismissalFielder">Dismissal Fielder</Label>
-                        <Input
-                          id="dismissalFielder"
-                          {...performanceForm.register('dismissalFielder')}
-                          placeholder="Fielder name"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="dismissalOver">Dismissal Over</Label>
-                        <Input
-                          id="dismissalOver"
-                          type="number"
-                          {...performanceForm.register('dismissalOver', { valueAsNumber: true })}
-                          min="1"
-                          placeholder="e.g., 15"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="dismissalBall">Dismissal Ball</Label>
-                        <Input
-                          id="dismissalBall"
-                          type="number"
-                          {...performanceForm.register('dismissalBall', { valueAsNumber: true })}
-                          min="1"
-                          max="6"
-                          placeholder="e.g., 3"
-                        />
-                      </div>
-                    </div>
                   </div>
 
                   {/* Bowling Performance */}
@@ -2093,202 +2168,277 @@ export default function DataEntryPage() {
                       <div className="space-y-6">
                         {/* First Innings Bowling */}
                         <div className="space-y-4">
-                          <h4 className="text-md font-medium">First Innings Bowling</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="firstInningsBowling.overs">Overs</Label>
-                              <Input
-                                id="firstInningsBowling.overs"
-                                type="number"
-                                step="0.1"
-                                {...performanceForm.register('firstInningsBowling.overs', { valueAsNumber: true })}
-                                min="0"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="firstInningsBowling.maidens">Maidens</Label>
-                              <Input
-                                id="firstInningsBowling.maidens"
-                                type="number"
-                                {...performanceForm.register('firstInningsBowling.maidens', { valueAsNumber: true })}
-                                min="0"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="firstInningsBowling.runsConceded">Runs Conceded</Label>
-                              <Input
-                                id="firstInningsBowling.runsConceded"
-                                type="number"
-                                {...performanceForm.register('firstInningsBowling.runsConceded', { valueAsNumber: true })}
-                                min="0"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="firstInningsBowling.wickets">Wickets</Label>
-                              <Input
-                                id="firstInningsBowling.wickets"
-                                type="number"
-                                {...performanceForm.register('firstInningsBowling.wickets', { valueAsNumber: true })}
-                                min="0"
-                              />
-                            </div>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id="didNotBowlFirstInnings"
+                              checked={didNotBowlFirstInnings}
+                              onChange={(e) => {
+                                setDidNotBowlFirstInnings(e.target.checked);
+                                performanceForm.setValue('didNotBowlFirstInnings', e.target.checked);
+                                if (e.target.checked) {
+                                  performanceForm.setValue('firstInningsBowling', undefined);
+                                }
+                              }}
+                              className="h-4 w-4"
+                            />
+                            <Label htmlFor="didNotBowlFirstInnings" className="text-sm font-normal cursor-pointer">
+                              Did not bowl in first innings
+                            </Label>
                           </div>
+
+                          {!didNotBowlFirstInnings && (
+                            <>
+                              <h4 className="text-md font-medium">First Innings Bowling</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="firstInningsBowling.overs">Overs</Label>
+                                  <Input
+                                    id="firstInningsBowling.overs"
+                                    type="number"
+                                    step="0.1"
+                                    {...performanceForm.register('firstInningsBowling.overs', { valueAsNumber: true })}
+                                    min="0"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="firstInningsBowling.maidens">Maidens</Label>
+                                  <Input
+                                    id="firstInningsBowling.maidens"
+                                    type="number"
+                                    {...performanceForm.register('firstInningsBowling.maidens', { valueAsNumber: true })}
+                                    min="0"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="firstInningsBowling.runsConceded">Runs Conceded</Label>
+                                  <Input
+                                    id="firstInningsBowling.runsConceded"
+                                    type="number"
+                                    {...performanceForm.register('firstInningsBowling.runsConceded', { valueAsNumber: true })}
+                                    min="0"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="firstInningsBowling.wickets">Wickets</Label>
+                                  <Input
+                                    id="firstInningsBowling.wickets"
+                                    type="number"
+                                    {...performanceForm.register('firstInningsBowling.wickets', { valueAsNumber: true })}
+                                    min="0"
+                                  />
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
 
                         {/* Second Innings Bowling */}
                         <div className="space-y-4">
-                          <h4 className="text-md font-medium">Second Innings Bowling</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="secondInningsBowling.overs">Overs</Label>
-                              <Input
-                                id="secondInningsBowling.overs"
-                                type="number"
-                                step="0.1"
-                                {...performanceForm.register('secondInningsBowling.overs', { valueAsNumber: true })}
-                                min="0"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="secondInningsBowling.maidens">Maidens</Label>
-                              <Input
-                                id="secondInningsBowling.maidens"
-                                type="number"
-                                {...performanceForm.register('secondInningsBowling.maidens', { valueAsNumber: true })}
-                                min="0"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="secondInningsBowling.runsConceded">Runs Conceded</Label>
-                              <Input
-                                id="secondInningsBowling.runsConceded"
-                                type="number"
-                                {...performanceForm.register('secondInningsBowling.runsConceded', { valueAsNumber: true })}
-                                min="0"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="secondInningsBowling.wickets">Wickets</Label>
-                              <Input
-                                id="secondInningsBowling.wickets"
-                                type="number"
-                                {...performanceForm.register('secondInningsBowling.wickets', { valueAsNumber: true })}
-                                min="0"
-                              />
-                            </div>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id="didNotBowlSecondInnings"
+                              checked={didNotBowlSecondInnings}
+                              onChange={(e) => {
+                                setDidNotBowlSecondInnings(e.target.checked);
+                                performanceForm.setValue('didNotBowlSecondInnings', e.target.checked);
+                                if (e.target.checked) {
+                                  performanceForm.setValue('secondInningsBowling', undefined);
+                                }
+                              }}
+                              className="h-4 w-4"
+                            />
+                            <Label htmlFor="didNotBowlSecondInnings" className="text-sm font-normal cursor-pointer">
+                              Did not bowl in second innings
+                            </Label>
                           </div>
+
+                          {!didNotBowlSecondInnings && (
+                            <>
+                              <h4 className="text-md font-medium">Second Innings Bowling</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="secondInningsBowling.overs">Overs</Label>
+                                  <Input
+                                    id="secondInningsBowling.overs"
+                                    type="number"
+                                    step="0.1"
+                                    {...performanceForm.register('secondInningsBowling.overs', { valueAsNumber: true })}
+                                    min="0"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="secondInningsBowling.maidens">Maidens</Label>
+                                  <Input
+                                    id="secondInningsBowling.maidens"
+                                    type="number"
+                                    {...performanceForm.register('secondInningsBowling.maidens', { valueAsNumber: true })}
+                                    min="0"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="secondInningsBowling.runsConceded">Runs Conceded</Label>
+                                  <Input
+                                    id="secondInningsBowling.runsConceded"
+                                    type="number"
+                                    {...performanceForm.register('secondInningsBowling.runsConceded', { valueAsNumber: true })}
+                                    min="0"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="secondInningsBowling.wickets">Wickets</Label>
+                                  <Input
+                                    id="secondInningsBowling.wickets"
+                                    type="number"
+                                    {...performanceForm.register('secondInningsBowling.wickets', { valueAsNumber: true })}
+                                    min="0"
+                                  />
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     ) : (
                       // Single innings bowling for limited overs matches
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="overs">Overs</Label>
-                          <Input
-                            id="overs"
-                            type="number"
-                            step="0.1"
-                            {...performanceForm.register('overs', { valueAsNumber: true })}
-                            min="0"
+                      <div className="space-y-4">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="didNotBowlSingleInnings"
+                            checked={didNotBowlFirstInnings}
+                            onChange={(e) => {
+                              setDidNotBowlFirstInnings(e.target.checked);
+                              performanceForm.setValue('didNotBowlFirstInnings', e.target.checked);
+                              if (e.target.checked) {
+                                // Clear legacy bowling fields
+                                performanceForm.setValue('overs', undefined);
+                                performanceForm.setValue('maidens', undefined);
+                                performanceForm.setValue('runsConceded', undefined);
+                                performanceForm.setValue('wickets', undefined);
+                              }
+                            }}
+                            className="h-4 w-4"
                           />
+                          <Label htmlFor="didNotBowlSingleInnings" className="text-sm font-normal cursor-pointer">
+                            Did not bowl
+                          </Label>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="maidens">Maidens</Label>
-                          <Input
-                            id="maidens"
-                            type="number"
-                            {...performanceForm.register('maidens', { valueAsNumber: true })}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="runsConceded">Runs Conceded</Label>
-                          <Input
-                            id="runsConceded"
-                            type="number"
-                            {...performanceForm.register('runsConceded', { valueAsNumber: true })}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="wickets">Wickets</Label>
-                          <Input
-                            id="wickets"
-                            type="number"
-                            {...performanceForm.register('wickets', { valueAsNumber: true })}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="dotBallsBowled">Dot Balls Bowled</Label>
-                          <Input
-                            id="dotBallsBowled"
-                            type="number"
-                            {...performanceForm.register('dotBallsBowled', { valueAsNumber: true })}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="wides">Wides</Label>
-                          <Input
-                            id="wides"
-                            type="number"
-                            {...performanceForm.register('wides', { valueAsNumber: true })}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="noBalls">No Balls</Label>
-                          <Input
-                            id="noBalls"
-                            type="number"
-                            {...performanceForm.register('noBalls', { valueAsNumber: true })}
-                            min="0"
-                          />
-                        </div>
+
+                        {!didNotBowlFirstInnings && (
+                          <>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="overs">Overs</Label>
+                                <Input
+                                  id="overs"
+                                  type="number"
+                                  step="0.1"
+                                  {...performanceForm.register('overs', { valueAsNumber: true })}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="maidens">Maidens</Label>
+                                <Input
+                                  id="maidens"
+                                  type="number"
+                                  {...performanceForm.register('maidens', { valueAsNumber: true })}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="runsConceded">Runs Conceded</Label>
+                                <Input
+                                  id="runsConceded"
+                                  type="number"
+                                  {...performanceForm.register('runsConceded', { valueAsNumber: true })}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="wickets">Wickets</Label>
+                                <Input
+                                  id="wickets"
+                                  type="number"
+                                  {...performanceForm.register('wickets', { valueAsNumber: true })}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="dotBallsBowled">Dot Balls Bowled</Label>
+                                <Input
+                                  id="dotBallsBowled"
+                                  type="number"
+                                  {...performanceForm.register('dotBallsBowled', { valueAsNumber: true })}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="wides">Wides</Label>
+                                <Input
+                                  id="wides"
+                                  type="number"
+                                  {...performanceForm.register('wides', { valueAsNumber: true })}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="noBalls">No Balls</Label>
+                                <Input
+                                  id="noBalls"
+                                  type="number"
+                                  {...performanceForm.register('noBalls', { valueAsNumber: true })}
+                                  min="0"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Wicket Types */}
+                            <h4 className="text-md font-medium mt-6">Wicket Types</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="caughtWickets">Caught</Label>
+                                <Input
+                                  id="caughtWickets"
+                                  type="number"
+                                  {...performanceForm.register('caughtWickets', { valueAsNumber: true })}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="bowledWickets">Bowled</Label>
+                                <Input
+                                  id="bowledWickets"
+                                  type="number"
+                                  {...performanceForm.register('bowledWickets', { valueAsNumber: true })}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="lbwWickets">LBW</Label>
+                                <Input
+                                  id="lbwWickets"
+                                  type="number"
+                                  {...performanceForm.register('lbwWickets', { valueAsNumber: true })}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="stumpedWickets">Stumped</Label>
+                                <Input
+                                  id="stumpedWickets"
+                                  type="number"
+                                  {...performanceForm.register('stumpedWickets', { valueAsNumber: true })}
+                                  min="0"
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
-
-                    {/* Wicket Types */}
-                    <h4 className="text-md font-medium mt-6">Wicket Types</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="caughtWickets">Caught</Label>
-                        <Input
-                          id="caughtWickets"
-                          type="number"
-                          {...performanceForm.register('caughtWickets', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="bowledWickets">Bowled</Label>
-                        <Input
-                          id="bowledWickets"
-                          type="number"
-                          {...performanceForm.register('bowledWickets', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="lbwWickets">LBW</Label>
-                        <Input
-                          id="lbwWickets"
-                          type="number"
-                          {...performanceForm.register('lbwWickets', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="stumpedWickets">Stumped</Label>
-                        <Input
-                          id="stumpedWickets"
-                          type="number"
-                          {...performanceForm.register('stumpedWickets', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                    </div>
                   </div>
 
                   {/* Fielding Performance */}
@@ -2325,7 +2475,13 @@ export default function DataEntryPage() {
                     </div>
                   </div>
 
-                  <Button type="submit" disabled={loading || !formsReady} className="w-full">
+                  {/* Debugging info */}
+                  <div className="text-xs text-gray-500 mt-2">
+                    Forms Ready: {formsReady ? 'Yes' : 'No'}, Loading: {loading ? 'Yes' : 'No'}
+                    <br />
+                    Errors: {JSON.stringify(performanceForm.formState.errors, (key, value) => key === 'ref' ? undefined : value, 2)}
+                  </div>
+                  <Button type="submit" disabled={loading || !formsReady} className="w-full" onClick={() => console.log('Submit button clicked')}>
                     {loading ? 'Adding Performance...' : 'Add Performance'}
                   </Button>
                 </form>
@@ -2333,7 +2489,7 @@ export default function DataEntryPage() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }
