@@ -100,7 +100,7 @@ export default function SeriesParticipationList() {
           </div>
         ) : (
           <div className="space-y-4">
-            {participations.map((participation) => (
+            {participations.filter(p => p.series).map((participation) => (
               <div key={participation._id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between mb-3">
                   <div>
@@ -124,7 +124,7 @@ export default function SeriesParticipationList() {
                     <Users className="w-4 h-4 text-muted-foreground" />
                     <span className="font-medium">{participation.teamRepresented}</span>
                   </div>
-                  
+
                   {participation.jerseyNumber && (
                     <div className="flex items-center gap-2">
                       <span className="w-4 h-4 text-center text-xs font-bold border rounded">
@@ -133,12 +133,12 @@ export default function SeriesParticipationList() {
                       <span>Jersey {participation.jerseyNumber}</span>
                     </div>
                   )}
-                  
+
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
                     <span>{new Date(participation.createdAt).toLocaleDateString()}</span>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     <Trophy className="w-4 h-4 text-muted-foreground" />
                     <span>{participation.matchesPlayed || 0} matches</span>

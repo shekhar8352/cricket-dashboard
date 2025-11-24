@@ -5,21 +5,23 @@ import SeriesParticipation from '@/database/models/SeriesParticipation';
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
-    
+
     const { searchParams } = new URL(request.url);
     const playerId = searchParams.get('playerId');
     const seriesId = searchParams.get('seriesId');
-    
+
     let query = {};
     if (playerId) query = { ...query, player: playerId };
     if (seriesId) query = { ...query, series: seriesId };
-    
+
     const participations = await SeriesParticipation.find(query)
       .populate('player', 'fullName country role')
       .populate('series', 'name type format level')
       .sort({ createdAt: -1 });
-    
-    return NextResponse.json({ success: true, participations });
+
+    const validParticipations = participations.filter(p => p.series);
+
+    return NextResponse.json({ success: true, participations: validParticipations });
   } catch (error) {
     console.error('Error fetching series participations:', error);
     return NextResponse.json({ success: false, error: 'Failed to fetch participations' }, { status: 500 });
@@ -30,13 +32,13 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB();
     const data = await request.json();
-    
+
     // Check if participation already exists
     const existingParticipation = await SeriesParticipation.findOne({
       player: data.playerId,
       series: data.seriesId
     });
-    
+
     if (existingParticipation) {
       // Update existing participation
       Object.assign(existingParticipation, {
@@ -50,7 +52,7 @@ export async function POST(request: NextRequest) {
         status: data.status || 'selected',
         notes: data.notes
       });
-      
+
       await existingParticipation.save();
       return NextResponse.json({ success: true, participation: existingParticipation });
     } else {
@@ -69,7 +71,7 @@ export async function POST(request: NextRequest) {
         selectionDate: new Date(),
         notes: data.notes
       });
-      
+
       await participation.save();
       return NextResponse.json({ success: true, participation });
     }

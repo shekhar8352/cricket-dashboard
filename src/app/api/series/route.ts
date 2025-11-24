@@ -18,18 +18,18 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB();
     const data = await request.json();
-    
+
     console.log('Received series data:', data);
-    
+
     // Check if series with same name already exists
     const existingSeries = await Series.findOne({ name: data.name });
     if (existingSeries) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         error: `A series/tournament with the name "${data.name}" already exists. Please choose a different name.`
       }, { status: 400 });
     }
-    
+
     // Create the series first
     const seriesData = {
       name: data.name,
@@ -41,68 +41,37 @@ export async function POST(request: NextRequest) {
       hostCountry: data.hostCountry,
       teams: data.teams,
       totalMatches: data.totalMatches,
+      matchTypes: data.matchTypes,
       description: data.description,
       trophy: data.trophy,
       sponsor: data.sponsor,
       status: data.status || 'upcoming',
       matches: []
     };
-    
+
     const series = new Series(seriesData);
     await series.save();
-    
+
     console.log('Series created successfully:', series);
-    
-    // Create matches if provided
-    if (data.matches && data.matches.length > 0) {
-      const matchPromises = data.matches.map(async (matchData: any, index: number) => {
-        // Ensure every match is properly linked to the series
-        const match = new Match({
-          ...matchData,
-          date: new Date(matchData.date),
-          matchNumber: index + 1,
-          totalMatches: data.totalMatches,
-          series: series.name, // Link to series name
-          seriesType: series.type, // Link to series type
-          tournament: series.name, // Tournament name same as series name
-          level: series.level, // Use series level
-          format: matchData.format || series.format, // Use match format or fallback to series format
-          // Ensure venue details are included
-          city: matchData.city || '',
-          country: matchData.country || series.hostCountry
-        });
-        
-        await match.save();
-        console.log(`Created match ${index + 1}: ${match.opponent} at ${match.venue}`);
-        return match._id;
-      });
-      
-      const matchIds = await Promise.all(matchPromises);
-      
-      // Update series with match IDs
-      series.matches = matchIds;
-      await series.save();
-      
-      console.log(`Successfully created series "${series.name}" with ${matchIds.length} matches`);
-    } else {
-      console.log(`Successfully created series "${series.name}" with no matches - matches can be added later`);
-    }
-    
+
+    // Matches are no longer created here - they are added one by one later
+    console.log(`Successfully created series "${series.name}" - matches to be added manually`);
+
     return NextResponse.json({ success: true, series });
   } catch (error) {
     console.error('Error creating series:', error);
     console.error('Error details:', error);
-    
+
     // Handle MongoDB duplicate key error
     if (error instanceof Error && error.message.includes('duplicate key')) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         error: 'A series with this name already exists. Please choose a different name.'
       }, { status: 400 });
     }
-    
-    return NextResponse.json({ 
-      success: false, 
+
+    return NextResponse.json({
+      success: false,
       error: 'Failed to create series',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });

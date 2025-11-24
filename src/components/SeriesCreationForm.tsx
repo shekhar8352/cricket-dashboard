@@ -38,23 +38,15 @@ const seriesSchema = z.object({
     isHome: z.boolean()
   })).min(2, 'At least 2 teams are required'),
 
-  matches: z.array(z.object({
-    date: z.string().min(1, 'Match date is required'),
-    venue: z.string().min(1, 'Venue is required'),
-    opponent: z.string().min(1, 'Opponent is required'),
-    city: z.string().optional(),
-    country: z.string().optional(),
-    matchNumber: z.number().min(1),
-    format: z.enum(['Test', 'ODI', 'T20', 'First-class', 'List-A', 'T20-domestic']),
-    level: z.enum(['under19-international', 'domestic', 'Ranji', 'IPL', 'List-A', 'international']),
-    importance: z.enum(['high', 'medium', 'low']).optional(),
-    matchType: z.enum(['debut', 'milestone', 'final', 'knockout', 'regular']).optional(),
-    didNotPlay: z.object({
-      reason: z.enum(['injury', 'illness', 'rest', 'disciplinary', 'personal', 'team_selection', 'other']),
-      details: z.string().optional(),
-      replacementPlayer: z.string().optional(),
-    }).optional(),
-  })).optional()
+  // Tournament Structure
+  totalMatches: z.number().min(1, 'Total planned matches is required'),
+  matchTypes: z.array(z.string()).optional(),
+
+  // Tournament Stages
+  hasGroupStage: z.boolean().optional(),
+  hasKnockoutStage: z.boolean().optional(),
+  hasSuperStage: z.boolean().optional(),
+  hasFinal: z.boolean().optional(),
 });
 
 type SeriesFormData = z.infer<typeof seriesSchema>;
@@ -89,8 +81,12 @@ export default function SeriesCreationForm({ onSeriesCreated }: SeriesCreationFo
     resolver: zodResolver(seriesSchema),
     defaultValues: {
       teams: [{ name: '', isHome: true }],
-      matches: [], // Start with no matches
-      isCaptain: false
+      isCaptain: false,
+      totalMatches: 1,
+      hasGroupStage: false,
+      hasKnockoutStage: false,
+      hasSuperStage: false,
+      hasFinal: false
     }
   });
 
@@ -101,10 +97,7 @@ export default function SeriesCreationForm({ onSeriesCreated }: SeriesCreationFo
     name: "teams"
   });
 
-  const { fields: matchFields, append: appendMatch, remove: removeMatch } = useFieldArray({
-    control: seriesForm.control,
-    name: "matches"
-  });
+
 
   // Fetch venues and current player on component mount
   useEffect(() => {
@@ -145,43 +138,32 @@ export default function SeriesCreationForm({ onSeriesCreated }: SeriesCreationFo
       return;
     }
 
-    // Validate that all matches have required fields (only if matches exist)
-    if (data.matches && data.matches.length > 0) {
-      const invalidMatches = data.matches.filter(match =>
-        !match.date || !match.venue || !match.opponent
-      );
 
-      if (invalidMatches.length > 0) {
-        alert(`Please fill in all required fields for matches. ${invalidMatches.length} match(es) are incomplete.`);
-        return;
-      }
-    }
 
     setLoading(true);
     try {
-      // Calculate total matches
-      const totalMatches = data.matches ? data.matches.length : 0;
+      // Calculate match types based on stages
+      const matchTypes = [];
+      if (data.hasGroupStage) matchTypes.push('League');
+      if (data.hasSuperStage) matchTypes.push('Super 8/6/4');
+      if (data.hasKnockoutStage) matchTypes.push('Knockout');
+      if (data.hasFinal) matchTypes.push('Final');
+      if (data.type === 'bilateral') matchTypes.push('Bilateral');
 
       // Prepare series data - exclude player-specific fields
-      const { playerTeam, playerRole, isCaptain, jerseyNumber, ...seriesOnlyData } = data;
+      const {
+        playerTeam, playerRole, isCaptain, jerseyNumber,
+        hasGroupStage, hasKnockoutStage, hasSuperStage, hasFinal,
+        ...seriesOnlyData
+      } = data;
 
       const seriesData = {
         ...seriesOnlyData,
-        totalMatches,
+        matchTypes,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
         status: 'upcoming' as const,
-        matches: data.matches ? data.matches.map((match, index) => ({
-          ...match,
-          date: match.date, // Keep as string, will be converted in API
-          matchNumber: index + 1,
-          totalMatches,
-          series: data.name,
-          seriesType: data.type,
-          tournament: data.name,
-          level: data.level,
-          format: match.format
-        })) : []
+        matches: [] // No matches created initially
       };
 
       console.log('Creating series with data:', seriesData);
@@ -220,12 +202,7 @@ export default function SeriesCreationForm({ onSeriesCreated }: SeriesCreationFo
           }
         }
 
-        const matchCount = data.matches ? data.matches.length : 0;
-        if (matchCount > 0) {
-          alert(`Series/Tournament "${result.series.name}" created successfully with ${matchCount} matches!`);
-        } else {
-          alert(`Series/Tournament "${result.series.name}" created successfully! You can add matches later using the match data entry form.`);
-        }
+        alert(`Series/Tournament "${result.series.name}" created successfully! You can now add matches one by one.`);
 
         if (onSeriesCreated) {
           onSeriesCreated(result.series._id, result.series.name);
@@ -236,7 +213,6 @@ export default function SeriesCreationForm({ onSeriesCreated }: SeriesCreationFo
 
         // Reset form to default state
         seriesForm.setValue('teams', [{ name: '', isHome: true }]);
-        seriesForm.setValue('matches', []); // Reset to empty matches array
 
       } else {
         const errorText = await response.text();
@@ -329,16 +305,10 @@ export default function SeriesCreationForm({ onSeriesCreated }: SeriesCreationFo
     }
 
     // Clear existing matches - don't auto-generate, let user click generate button or add manually
-    seriesForm.setValue('matches', []);
+    // seriesForm.setValue('matches', []);
 
     setSelectedPreset(presetId);
-
-    // Show message about generating matches
-    if (preset.type === 'league') {
-      alert(`${preset.name} preset applied! Click "Generate League Matches" to create randomized league fixtures.`);
-    } else {
-      alert(`${preset.name} preset applied! Click "Generate Matches" to create the match schedule.`);
-    }
+    alert(`${preset.name} preset applied!`);
   };
 
   const toggleDidNotPlay = (matchIndex: number) => {
@@ -462,14 +432,14 @@ export default function SeriesCreationForm({ onSeriesCreated }: SeriesCreationFo
     setAvailableVenues(countryVenues);
 
     // Clear existing venue selections in matches since country changed
-    const currentMatches = seriesForm.getValues('matches') || [];
-    const updatedMatches = currentMatches.map(match => ({
-      ...match,
-      venue: '',
-      city: '',
-      country: country
-    }));
-    seriesForm.setValue('matches', updatedMatches);
+    // const currentMatches = seriesForm.getValues('matches') || [];
+    // const updatedMatches = currentMatches.map(match => ({
+    //   ...match,
+    //   venue: '',
+    //   city: '',
+    //   country: country
+    // }));
+    // seriesForm.setValue('matches', updatedMatches);
   };
 
   const handleFormatChange = (format: string) => {
@@ -499,223 +469,7 @@ export default function SeriesCreationForm({ onSeriesCreated }: SeriesCreationFo
     return true;
   };
 
-  const addMatch = () => {
-    const matchNumber = matchFields.length + 1;
-    const currentFormat = seriesForm.getValues('format');
-    const matchFormat = currentFormat === 'mixed' ? 'ODI' : currentFormat;
-    const hostCountry = seriesForm.getValues('hostCountry') || '';
 
-    appendMatch({
-      date: '',
-      venue: '',
-      opponent: '',
-      matchNumber,
-      format: matchFormat as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic',
-      level: seriesForm.getValues('level'),
-      city: '',
-      country: hostCountry
-    });
-  };
-
-  const generateMatches = () => {
-    const teams = seriesForm.getValues('teams');
-    const seriesType = seriesForm.getValues('type');
-    const format = seriesForm.getValues('format');
-    const level = seriesForm.getValues('level');
-
-    if (teams.length < 2) {
-      alert('Please add at least 2 teams first');
-      return;
-    }
-
-    type MatchData = {
-      date: string;
-      venue: string;
-      opponent: string;
-      matchNumber: number;
-      format: 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic';
-      level: 'under19-international' | 'domestic' | 'Ranji' | 'IPL' | 'List-A' | 'international';
-      city?: string;
-      country?: string;
-      importance?: 'high' | 'medium' | 'low';
-      matchType?: 'debut' | 'milestone' | 'final' | 'knockout' | 'regular';
-    };
-
-    const matches: MatchData[] = [];
-    const homeTeamObj = teams.find(t => t.isHome);
-    const awayTeams = teams.filter(t => !t.isHome);
-
-    // Shuffle function for randomness
-    const shuffleArray = (array: string[]): string[] => {
-      const shuffled = [...array];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      return shuffled;
-    };
-
-    // Shuffle function for matchups
-    const shuffleMatchups = (array: { team1: string; team2: string }[]): { team1: string; team2: string }[] => {
-      const shuffled = [...array];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      return shuffled;
-    };
-
-    if (seriesType === 'bilateral' && homeTeamObj && awayTeams.length === 1) {
-      // Generate bilateral series matches
-      const opponent = awayTeams[0].name;
-      const matchCount = format === 'Test' ? 3 : format === 'ODI' ? 5 : 3; // Default match counts
-
-      // Shuffle venues for randomness
-      const shuffledVenues = shuffleArray(availableVenues);
-
-      for (let i = 1; i <= matchCount; i++) {
-        const matchFormat = format === 'mixed' ? (i % 2 === 1 ? 'ODI' : 'T20') : format;
-        // Assign venue from shuffled venues (rotate through them)
-        const venueIndex = (i - 1) % shuffledVenues.length;
-        const assignedVenue = shuffledVenues.length > 0 ? shuffledVenues[venueIndex] : '';
-        const venue = venues.find(v => v.name === assignedVenue);
-
-        matches.push({
-          date: '',
-          venue: assignedVenue,
-          opponent,
-          matchNumber: i,
-          format: matchFormat as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic',
-          level,
-          city: venue?.city || '',
-          country: venue?.country || seriesForm.getValues('hostCountry') || ''
-        });
-      }
-    } else if (seriesType === 'triangular' && teams.length === 3) {
-      // Generate triangular series matches (round robin + final)
-      const teamNames = teams.map(t => t.name);
-      let matchNumber = 1;
-
-      // Shuffle venues for randomness
-      const shuffledVenues = shuffleArray(availableVenues);
-
-      // Round robin matches
-      for (let i = 0; i < teamNames.length; i++) {
-        for (let j = i + 1; j < teamNames.length; j++) {
-          const matchFormat = format === 'mixed' ? 'ODI' : format;
-          // Assign venue from shuffled venues
-          const venueIndex = (matchNumber - 1) % shuffledVenues.length;
-          const assignedVenue = shuffledVenues.length > 0 ? shuffledVenues[venueIndex] : '';
-          const venue = venues.find(v => v.name === assignedVenue);
-
-          matches.push({
-            date: '',
-            venue: assignedVenue,
-            opponent: teamNames[j],
-            matchNumber: matchNumber++,
-            format: matchFormat as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic',
-            level,
-            city: venue?.city || '',
-            country: venue?.country || seriesForm.getValues('hostCountry') || ''
-          });
-        }
-      }
-
-      // Final match
-      const finalFormat = format === 'mixed' ? 'ODI' : format;
-      const finalVenueIndex = (matchNumber - 1) % shuffledVenues.length;
-      const finalVenue = shuffledVenues.length > 0 ? shuffledVenues[finalVenueIndex] : '';
-      const finalVenueObj = venues.find(v => v.name === finalVenue);
-
-      matches.push({
-        date: '',
-        venue: finalVenue,
-        opponent: 'TBD',
-        matchNumber: matchNumber,
-        format: finalFormat as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic',
-        level,
-        city: finalVenueObj?.city || '',
-        country: finalVenueObj?.country || seriesForm.getValues('hostCountry') || '',
-        matchType: 'final'
-      });
-    } else if (seriesType === 'league' && teams.length >= 4) {
-      // Generate league matches with randomness - only for league type
-      const teamNames = teams.map(t => t.name);
-      const playerTeam = seriesForm.getValues('playerTeam');
-      let matchNumber = 1;
-
-      // Shuffle venues for randomness
-      const shuffledVenues = shuffleArray(availableVenues);
-
-      // Generate round-robin matches with randomness
-      const allMatchups: { team1: string; team2: string }[] = [];
-
-      // Create all possible matchups
-      for (let i = 0; i < teamNames.length; i++) {
-        for (let j = i + 1; j < teamNames.length; j++) {
-          allMatchups.push({ team1: teamNames[i], team2: teamNames[j] });
-        }
-      }
-
-      // Shuffle matchups for random order
-      const shuffledMatchups = shuffleMatchups(allMatchups);
-
-      // Generate matches from shuffled matchups
-      shuffledMatchups.forEach((matchup) => {
-        const matchFormat = format === 'mixed' ? (Math.random() > 0.5 ? 'ODI' : 'T20') : format;
-        const venueIndex = (matchNumber - 1) % shuffledVenues.length;
-        const assignedVenue = shuffledVenues.length > 0 ? shuffledVenues[venueIndex] : '';
-        const venue = venues.find(v => v.name === assignedVenue);
-
-        // Determine opponent based on player's team
-        const opponent = matchup.team1 === playerTeam ? matchup.team2 : matchup.team1;
-
-        // Only add matches where player's team is involved
-        if (matchup.team1 === playerTeam || matchup.team2 === playerTeam) {
-          matches.push({
-            date: '',
-            venue: assignedVenue,
-            opponent,
-            matchNumber: matchNumber++,
-            format: matchFormat as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic',
-            level,
-            city: venue?.city || '',
-            country: venue?.country || seriesForm.getValues('hostCountry') || '',
-            importance: Math.random() > 0.7 ? 'high' : Math.random() > 0.4 ? 'medium' : 'low'
-          });
-        }
-      });
-
-      // Add playoff matches if it's a league
-      if (matches.length > 0) {
-        const playoffVenueIndex = matchNumber % shuffledVenues.length;
-        const playoffVenue = shuffledVenues.length > 0 ? shuffledVenues[playoffVenueIndex] : '';
-        const playoffVenueObj = venues.find(v => v.name === playoffVenue);
-
-        matches.push({
-          date: '',
-          venue: playoffVenue,
-          opponent: 'TBD (Playoff)',
-          matchNumber: matchNumber,
-          format: format === 'mixed' ? 'T20' : format as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic',
-          level,
-          city: playoffVenueObj?.city || '',
-          country: playoffVenueObj?.country || seriesForm.getValues('hostCountry') || '',
-          matchType: 'knockout',
-          importance: 'high'
-        });
-      }
-    }
-
-    if (matches.length === 0) {
-      alert('Unable to generate matches. Please check your tournament configuration.');
-      return;
-    }
-
-    // Clear existing matches and add generated ones
-    seriesForm.setValue('matches', matches);
-    alert(`Generated ${matches.length} matches successfully!`);
-  };
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -774,7 +528,8 @@ export default function SeriesCreationForm({ onSeriesCreated }: SeriesCreationFo
                         // Reset form to default values
                         seriesForm.reset({
                           teams: [{ name: '', isHome: true }],
-                          matches: [] // Reset to empty matches array
+                          teams: [{ name: '', isHome: true }],
+                          totalMatches: 1
                         });
                       } else {
                         applyTournamentPreset(value);
@@ -1105,179 +860,72 @@ export default function SeriesCreationForm({ onSeriesCreated }: SeriesCreationFo
                   )}
                 </div>
 
-                {/* Matches Section */}
+                {/* Tournament Structure Section */}
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-medium">Matches (Optional)</h3>
-                      <div className="flex gap-2">
-                        {seriesForm.watch('type') === 'league' && (
-                          <Button type="button" onClick={generateMatches} variant="outline" size="sm">
-                            Generate League Matches
-                          </Button>
-                        )}
-                        {(seriesForm.watch('type') === 'bilateral' || seriesForm.watch('type') === 'triangular') && (
-                          <Button type="button" onClick={generateMatches} variant="outline" size="sm">
-                            Generate Matches
-                          </Button>
-                        )}
-                        <Button type="button" onClick={addMatch} variant="outline" size="sm">
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add Match
-                        </Button>
-                        {matchFields.length > 0 && (
-                          <Button
-                            type="button"
-                            onClick={() => seriesForm.setValue('matches', [])}
-                            variant="outline"
-                            size="sm"
-                          >
-                            Clear All Matches
-                          </Button>
-                        )}
+                  <h3 className="text-lg font-medium flex items-center gap-2">
+                    <Settings className="w-5 h-5" />
+                    Tournament Structure
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-lg">
+                    <div className="space-y-4">
+                      <Label>Tournament Stages</Label>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="hasGroupStage"
+                            className="h-4 w-4 rounded border-gray-300"
+                            {...seriesForm.register('hasGroupStage')}
+                          />
+                          <Label htmlFor="hasGroupStage" className="font-normal">League/Group Stage</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="hasSuperStage"
+                            className="h-4 w-4 rounded border-gray-300"
+                            {...seriesForm.register('hasSuperStage')}
+                          />
+                          <Label htmlFor="hasSuperStage" className="font-normal">Super 8/6/4 Stage</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="hasKnockoutStage"
+                            className="h-4 w-4 rounded border-gray-300"
+                            {...seriesForm.register('hasKnockoutStage')}
+                          />
+                          <Label htmlFor="hasKnockoutStage" className="font-normal">Knockout Stage (QF/SF)</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="hasFinal"
+                            className="h-4 w-4 rounded border-gray-300"
+                            {...seriesForm.register('hasFinal')}
+                          />
+                          <Label htmlFor="hasFinal" className="font-normal">Final Match</Label>
+                        </div>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      You can create a series without matches and add them later using the match data entry form.
-                      All matches added here will be automatically linked to this series/tournament.
-                      {seriesForm.watch('type') === 'league' && ' League matches will be randomized for fair scheduling.'}
-                    </p>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="totalMatches">Total Planned Matches</Label>
+                        <Input
+                          id="totalMatches"
+                          type="number"
+                          min="1"
+                          {...seriesForm.register('totalMatches', { valueAsNumber: true })}
+                          placeholder="e.g. 48"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Enter the total number of matches scheduled for this tournament.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-
-                  {matchFields.length === 0 && (
-                    <div className="p-8 text-center border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                      <Calendar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                      <h4 className="text-lg font-medium mb-2">No matches added yet</h4>
-                      <p className="text-muted-foreground mb-4">
-                        You can create this series without matches and add them later, or use the buttons above to add/generate matches now.
-                      </p>
-                    </div>
-                  )}
-
-                  {matchFields.map((field, index) => (
-                    <div key={field.id} className="p-4 border rounded-lg space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="space-y-2">
-                          <Label>Match #{index + 1} Date *</Label>
-                          <Input
-                            type="date"
-                            {...seriesForm.register(`matches.${index}.date`)}
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>Venue *</Label>
-                          <Select onValueChange={(value) => {
-                            seriesForm.setValue(`matches.${index}.venue`, value);
-                            const selectedVenue = venues.find(v => v.name === value);
-                            if (selectedVenue) {
-                              seriesForm.setValue(`matches.${index}.city`, selectedVenue.city);
-                              seriesForm.setValue(`matches.${index}.country`, selectedVenue.country);
-                            }
-                          }}>
-                            <SelectTrigger>
-                              <SelectValue placeholder={availableVenues.length > 0 ? "Select venue" : "Select host country first"} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableVenues.length > 0 ? (
-                                availableVenues.map((venueName) => {
-                                  const venue = venues.find(v => v.name === venueName);
-                                  return venue ? (
-                                    <SelectItem key={venue._id} value={venue.name}>
-                                      {venue.name}, {venue.city}
-                                    </SelectItem>
-                                  ) : null;
-                                })
-                              ) : (
-                                <SelectItem value="no-venues" disabled>
-                                  Select host country and format first
-                                </SelectItem>
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>Opponent *</Label>
-                          <Input
-                            {...seriesForm.register(`matches.${index}.opponent`)}
-                            placeholder="Opponent team"
-                          />
-                        </div>
-
-                        <div className="flex items-end gap-2">
-                          <Button
-                            type="button"
-                            onClick={() => toggleDidNotPlay(index)}
-                            variant={showDidNotPlay[index] ? "default" : "outline"}
-                            size="sm"
-                          >
-                            <Settings className="w-4 h-4 mr-1" />
-                            {showDidNotPlay[index] ? "Hide" : "DNP"}
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={() => removeMatch(index)}
-                            variant="destructive"
-                            size="sm"
-                            disabled={matchFields.length === 1}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Did Not Play Section */}
-                      {showDidNotPlay[index] && (
-                        <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                          <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                            <Settings className="w-4 h-4" />
-                            Did Not Play Configuration
-                          </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                              <Label>Reason for Not Playing</Label>
-                              <Select onValueChange={(value) =>
-                                seriesForm.setValue(`matches.${index}.didNotPlay.reason`, value as any)
-                              }>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select reason" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="injury">Injury</SelectItem>
-                                  <SelectItem value="illness">Illness</SelectItem>
-                                  <SelectItem value="rest">Rest/Rotation</SelectItem>
-                                  <SelectItem value="disciplinary">Disciplinary</SelectItem>
-                                  <SelectItem value="personal">Personal Reasons</SelectItem>
-                                  <SelectItem value="team_selection">Team Selection</SelectItem>
-                                  <SelectItem value="other">Other</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label>Details</Label>
-                              <Input
-                                {...seriesForm.register(`matches.${index}.didNotPlay.details`)}
-                                placeholder="Additional details..."
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label>Replacement Player</Label>
-                              <Input
-                                {...seriesForm.register(`matches.${index}.didNotPlay.replacementPlayer`)}
-                                placeholder="Player name"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {seriesForm.formState.errors.matches && (
-                    <p className="text-destructive text-sm">{seriesForm.formState.errors.matches.message}</p>
-                  )}
                 </div>
 
                 <Button type="submit" disabled={loading} className="w-full">

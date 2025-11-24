@@ -14,7 +14,7 @@ import MatchTable from "@/components/MatchTable";
 import MatchSummary from "@/components/MatchSummary";
 import SeriesCreationForm from "@/components/SeriesCreationForm";
 import SeriesParticipationList from "@/components/SeriesParticipationList";
-import WorkflowProgress from "@/components/WorkflowProgress";
+
 
 // Form validation schemas
 const playerSchema = z.object({
@@ -53,7 +53,7 @@ const matchSchema = z.object({
 
   // Match conditions
   weather: z.enum(['sunny', 'cloudy', 'overcast', 'drizzle', 'rain']).optional(),
-  pitchCondition: z.enum(['green', 'dry', 'dusty', 'flat', 'two-paced']).optional(),
+  pitchCondition: z.enum(['green', 'dry', 'dusty', 'hard', 'flat', 'two-paced']).optional(),
   pitchType: z.enum(['batting', 'bowling', 'balanced']).optional(),
 
   // Match context
@@ -216,7 +216,7 @@ type PerformanceFormData = z.infer<typeof performanceSchema>;
 
 export default function DataEntryPage() {
   const [activeTab, setActiveTab] = useState<'player' | 'match' | 'performance' | 'series'>('series'); // Default to series
-  const [currentStep, setCurrentStep] = useState<'series' | 'match' | 'performance'>('series');
+
   const [createdSeriesId, setCreatedSeriesId] = useState<string | null>(null);
   const [createdSeriesName, setCreatedSeriesName] = useState<string | null>(null);
   const [matchesCreatedCount, setMatchesCreatedCount] = useState(0);
@@ -356,6 +356,11 @@ export default function DataEntryPage() {
     setCheckingPlayer(false);
   }, [playerUpdateForm]);
 
+  // Fetch series on component mount
+  useEffect(() => {
+    fetchSeries();
+  }, []);
+
   // Check for existing player on component mount
   useEffect(() => {
     checkExistingPlayer();
@@ -472,8 +477,7 @@ export default function DataEntryPage() {
         if (selectedVenue.capacity) {
           matchForm.setValue('stadiumCapacity', selectedVenue.capacity);
         }
-        // Move to conditions step
-        setMatchCreationStep('conditions');
+        // Don't auto-advance - let user fill in all fields first
       } catch (formError) {
         console.error('Error setting venue form values:', formError);
       }
@@ -546,8 +550,18 @@ export default function DataEntryPage() {
   };
 
   const onSubmitMatch = async (data: MatchFormData) => {
+    console.log('onSubmitMatch called with data:', data);
+
     if (!matchForm || !matchForm.formState) {
       console.error('Form not properly initialized');
+      alert('Form not properly initialized. Please refresh the page.');
+      return;
+    }
+
+    // Log validation errors if any
+    if (matchForm.formState.errors && Object.keys(matchForm.formState.errors).length > 0) {
+      console.error('Form validation errors:', matchForm.formState.errors);
+      alert('Please fix the following errors: ' + Object.keys(matchForm.formState.errors).join(', '));
       return;
     }
 
@@ -557,14 +571,19 @@ export default function DataEntryPage() {
       const url = isEditing ? `/api/matches/${editingMatch._id}` : '/api/matches';
       const method = isEditing ? 'PUT' : 'POST';
 
+      console.log('Submitting to:', url, 'with method:', method);
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
 
+      console.log('Response status:', response.status);
+
       if (response.ok) {
         const result = await response.json();
+        console.log('Match saved successfully:', result);
         if (isEditing) {
           setMatches(prev => prev.map(match =>
             match._id === editingMatch._id ? result.match : match
@@ -575,15 +594,15 @@ export default function DataEntryPage() {
           setMatches(prev => [...prev, result.match]);
           alert('Match added successfully!');
           setMatchesCreatedCount(prev => prev + 1);
-          // If this is the first match, enable performance tab
-          if (matchesCreatedCount === 0) {
-            setCurrentStep('performance');
-          }
+          // Reset the match creation form
+          resetMatchForm();
         }
         matchForm.reset();
         setRefreshTrigger(prev => prev + 1);
       } else {
-        alert(isEditing ? 'Error updating match' : 'Error adding match');
+        const errorData = await response.json();
+        console.error('Server error:', errorData);
+        alert(isEditing ? 'Error updating match: ' + (errorData.error || 'Unknown error') : 'Error adding match: ' + (errorData.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error submitting match:', error);
@@ -683,11 +702,13 @@ export default function DataEntryPage() {
   const handleSeriesCreated = (seriesId: string, seriesName: string) => {
     setCreatedSeriesId(seriesId);
     setCreatedSeriesName(seriesName);
-    setCurrentStep('match');
+    // setCurrentStep('match'); // Removed stepper logic
     setActiveTab('match');
 
     // Pre-select the series in the match form
     handleSeriesSelection(seriesId);
+    // Refresh series list to hide alert if needed
+    fetchSeries();
   };
 
   // Component for creating a new player
@@ -1063,30 +1084,20 @@ export default function DataEntryPage() {
           )}
         </div>
 
-        <WorkflowProgress
-          currentStep={currentStep}
-          seriesCreated={!!createdSeriesId}
-          matchesCreated={matchesCreatedCount > 0}
-          matchCount={matchesCreatedCount}
-        />
-
+        {series.length === 0 && activeTab === 'series' && (
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 p-4 rounded mb-4">
+            No series/tournament found. Please create a series/tournament first.
+          </div>
+        )}
         <Tabs value={activeTab} onValueChange={(value) => {
-          // Prevent navigation if steps are not completed
-          if (value === 'match' && !createdSeriesId) {
-            alert('Please create a series/tournament first');
-            return;
-          }
-          if (value === 'performance' && matchesCreatedCount === 0) {
-            alert('Please create matches first');
-            return;
-          }
+          // Allow free navigation between all tabs
           setActiveTab(value as 'player' | 'match' | 'performance' | 'series');
         }} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="player">Player Info</TabsTrigger>
             <TabsTrigger value="series">Series & Tournaments</TabsTrigger>
-            <TabsTrigger value="match" disabled={!createdSeriesId}>Match Details</TabsTrigger>
-            <TabsTrigger value="performance" disabled={matchesCreatedCount === 0}>Performance</TabsTrigger>
+            <TabsTrigger value="match">Match Details</TabsTrigger>
+            <TabsTrigger value="performance">Performance</TabsTrigger>
           </TabsList>
 
           <TabsContent value="player">
@@ -1309,7 +1320,13 @@ export default function DataEntryPage() {
                             <Button
                               type="button"
                               onClick={() => setMatchCreationStep('conditions')}
-                              disabled={!matchForm.getValues('opponent') || !matchForm.getValues('venue') || !matchForm.getValues('date')}
+                              variant="outline"
+                            >
+                              Skip to Conditions
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={() => setMatchCreationStep('conditions')}
                             >
                               Continue to Conditions
                             </Button>
@@ -1344,7 +1361,7 @@ export default function DataEntryPage() {
 
                             <div className="space-y-2">
                               <Label>Pitch Condition</Label>
-                              <Select onValueChange={(value) => matchForm?.setValue && matchForm.setValue('pitchCondition', value as 'green' | 'dry' | 'dusty' | 'flat' | 'two-paced')}>
+                              <Select onValueChange={(value) => matchForm?.setValue && matchForm.setValue('pitchCondition', value as 'green' | 'dry' | 'dusty' | 'hard' | 'flat' | 'two-paced')}>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select pitch condition" />
                                 </SelectTrigger>
@@ -1352,6 +1369,7 @@ export default function DataEntryPage() {
                                   <SelectItem value="green">Green</SelectItem>
                                   <SelectItem value="dry">Dry</SelectItem>
                                   <SelectItem value="dusty">Dusty</SelectItem>
+                                  <SelectItem value="hard">Hard</SelectItem>
                                   <SelectItem value="flat">Flat</SelectItem>
                                   <SelectItem value="two-paced">Two-paced</SelectItem>
                                 </SelectContent>
@@ -1400,6 +1418,9 @@ export default function DataEntryPage() {
                           <div className="flex gap-2">
                             <Button type="button" onClick={() => setMatchCreationStep('venue')} variant="outline">
                               Back
+                            </Button>
+                            <Button type="button" onClick={() => setMatchCreationStep('details')} variant="outline">
+                              Skip to Details
                             </Button>
                             <Button type="button" onClick={() => setMatchCreationStep('details')}>
                               Continue to Details
@@ -1510,7 +1531,27 @@ export default function DataEntryPage() {
                             <Button type="button" onClick={() => setMatchCreationStep('conditions')} variant="outline">
                               Back
                             </Button>
-                            <Button type="submit" disabled={loading || !formsReady}>
+                            <Button
+                              type="submit"
+                              disabled={loading || !formsReady}
+                              onClick={async (e) => {
+                                console.log('Add Match button clicked!');
+                                console.log('Form state:', matchForm.formState);
+                                console.log('Form errors:', matchForm.formState.errors);
+                                console.log('Form values:', matchForm.getValues());
+
+                                // Manually trigger validation to show errors
+                                const isValid = await matchForm.trigger();
+                                console.log('Form is valid:', isValid);
+
+                                if (!isValid) {
+                                  console.error('Form validation failed:', matchForm.formState.errors);
+                                  const errorFields = Object.keys(matchForm.formState.errors);
+                                  alert('Please fill in all required fields: ' + errorFields.join(', '));
+                                  e.preventDefault();
+                                }
+                              }}
+                            >
                               {loading
                                 ? (editingMatch ? 'Updating Match...' : 'Adding Match...')
                                 : (editingMatch ? 'Update Match' : 'Add Match')
