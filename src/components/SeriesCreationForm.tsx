@@ -68,7 +68,11 @@ interface Venue {
   pitchType?: string;
 }
 
-export default function SeriesCreationForm() {
+interface SeriesCreationFormProps {
+  onSeriesCreated?: (seriesId: string, seriesName: string) => void;
+}
+
+export default function SeriesCreationForm({ onSeriesCreated }: SeriesCreationFormProps) {
   const [activeTab, setActiveTab] = useState<'series' | 'venues'>('series');
   const [loading, setLoading] = useState(false);
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -222,6 +226,11 @@ export default function SeriesCreationForm() {
         } else {
           alert(`Series/Tournament "${result.series.name}" created successfully! You can add matches later using the match data entry form.`);
         }
+
+        if (onSeriesCreated) {
+          onSeriesCreated(result.series._id, result.series.name);
+        }
+
         seriesForm.reset();
         setSelectedPreset('');
 

@@ -11,7 +11,7 @@ export interface IPerformance extends Document {
   // Match context
   battingPosition?: number;
   bowlingPosition?: "opening" | "middle" | "death";
-  innings?: 1 | 2; // First or second innings
+  innings?: 1 | 2 | 3 | 4; // Extended to support Test matches (up to 4 innings)
   isChasing?: boolean;
   target?: number; // Target score when chasing
   requiredRunRate?: number;
@@ -20,7 +20,69 @@ export interface IPerformance extends Document {
   isCaptain?: boolean;
   isWicketKeeper?: boolean;
 
-  // Batting performance
+  // Innings-wise batting performance (for Test/First-class matches)
+  firstInnings?: {
+    runs?: number;
+    ballsFaced?: number;
+    fours?: number;
+    sixes?: number;
+    singles?: number;
+    twos?: number;
+    threes?: number;
+    dotBalls?: number;
+    dismissalType?: string;
+    dismissalBowler?: string;
+    dismissalFielder?: string;
+    dismissalOver?: number;
+    dismissalBall?: number;
+  };
+
+  secondInnings?: {
+    runs?: number;
+    ballsFaced?: number;
+    fours?: number;
+    sixes?: number;
+    singles?: number;
+    twos?: number;
+    threes?: number;
+    dotBalls?: number;
+    dismissalType?: string;
+    dismissalBowler?: string;
+    dismissalFielder?: string;
+    dismissalOver?: number;
+    dismissalBall?: number;
+  };
+
+  // Innings-wise bowling performance (for Test/First-class matches)
+  firstInningsBowling?: {
+    overs?: number;
+    maidens?: number;
+    runsConceded?: number;
+    wickets?: number;
+    dotBallsBowled?: number;
+    wides?: number;
+    noBalls?: number;
+    caughtWickets?: number;
+    bowledWickets?: number;
+    lbwWickets?: number;
+    stumpedWickets?: number;
+  };
+
+  secondInningsBowling?: {
+    overs?: number;
+    maidens?: number;
+    runsConceded?: number;
+    wickets?: number;
+    dotBallsBowled?: number;
+    wides?: number;
+    noBalls?: number;
+    caughtWickets?: number;
+    bowledWickets?: number;
+    lbwWickets?: number;
+    stumpedWickets?: number;
+  };
+
+  // Legacy batting performance (for single innings matches)
   runs?: number;
   ballsFaced?: number;
   fours?: number;
@@ -171,7 +233,7 @@ const PerformanceSchema = new Schema<IPerformance>(
     // Match context
     battingPosition: Number,
     bowlingPosition: { type: String, enum: ["opening", "middle", "death"] },
-    innings: { type: Number, enum: [1, 2] },
+    innings: { type: Number, enum: [1, 2, 3, 4] }, // Extended for Test matches
     isChasing: Boolean,
     target: Number,
     requiredRunRate: Number,
@@ -180,7 +242,69 @@ const PerformanceSchema = new Schema<IPerformance>(
     isCaptain: Boolean,
     isWicketKeeper: Boolean,
 
-    // Batting performance
+    // Innings-wise batting performance
+    firstInnings: {
+      runs: Number,
+      ballsFaced: Number,
+      fours: Number,
+      sixes: Number,
+      singles: Number,
+      twos: Number,
+      threes: Number,
+      dotBalls: Number,
+      dismissalType: String,
+      dismissalBowler: String,
+      dismissalFielder: String,
+      dismissalOver: Number,
+      dismissalBall: Number,
+    },
+
+    secondInnings: {
+      runs: Number,
+      ballsFaced: Number,
+      fours: Number,
+      sixes: Number,
+      singles: Number,
+      twos: Number,
+      threes: Number,
+      dotBalls: Number,
+      dismissalType: String,
+      dismissalBowler: String,
+      dismissalFielder: String,
+      dismissalOver: Number,
+      dismissalBall: Number,
+    },
+
+    // Innings-wise bowling performance
+    firstInningsBowling: {
+      overs: Number,
+      maidens: Number,
+      runsConceded: Number,
+      wickets: Number,
+      dotBallsBowled: Number,
+      wides: Number,
+      noBalls: Number,
+      caughtWickets: Number,
+      bowledWickets: Number,
+      lbwWickets: Number,
+      stumpedWickets: Number,
+    },
+
+    secondInningsBowling: {
+      overs: Number,
+      maidens: Number,
+      runsConceded: Number,
+      wickets: Number,
+      dotBallsBowled: Number,
+      wides: Number,
+      noBalls: Number,
+      caughtWickets: Number,
+      bowledWickets: Number,
+      lbwWickets: Number,
+      stumpedWickets: Number,
+    },
+
+    // Legacy batting performance (for single innings matches)
     runs: Number,
     ballsFaced: Number,
     fours: Number,

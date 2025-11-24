@@ -14,6 +14,7 @@ import MatchTable from "@/components/MatchTable";
 import MatchSummary from "@/components/MatchSummary";
 import SeriesCreationForm from "@/components/SeriesCreationForm";
 import SeriesParticipationList from "@/components/SeriesParticipationList";
+import WorkflowProgress from "@/components/WorkflowProgress";
 
 // Form validation schemas
 const playerSchema = z.object({
@@ -25,7 +26,7 @@ const playerSchema = z.object({
   bowlingStyle: z.string().optional(),
   careerStart: z.string().min(1, 'Career start date is required'),
   careerEnd: z.string().optional(),
-  
+
   // Additional player details
   height: z.number().optional(),
   weight: z.number().optional(),
@@ -41,7 +42,7 @@ const matchSchema = z.object({
   venue: z.string().min(1, 'Venue is required'),
   opponent: z.string().min(1, 'Opponent is required'),
   result: z.string().optional(),
-  
+
   // Match details
   tossWinner: z.string().optional(),
   tossDecision: z.enum(['bat', 'bowl']).optional(),
@@ -49,27 +50,27 @@ const matchSchema = z.object({
   seriesType: z.enum(['bilateral', 'triangular', 'tournament', 'league']).optional(),
   tournament: z.string().optional(),
   manOfTheMatch: z.string().optional(),
-  
+
   // Match conditions
   weather: z.enum(['sunny', 'cloudy', 'overcast', 'drizzle', 'rain']).optional(),
   pitchCondition: z.enum(['green', 'dry', 'dusty', 'flat', 'two-paced']).optional(),
   pitchType: z.enum(['batting', 'bowling', 'balanced']).optional(),
-  
+
   // Match context
   homeAway: z.enum(['home', 'away', 'neutral']).optional(),
   dayNight: z.boolean().optional(),
   matchNumber: z.number().optional(),
   totalMatches: z.number().optional(),
-  
+
   // Team details
   captain: z.string().optional(),
   wicketKeeper: z.string().optional(),
-  
+
   // Stadium details
   city: z.string().optional(),
   country: z.string().optional(),
   stadiumCapacity: z.number().optional(),
-  
+
   // Match importance
   importance: z.enum(['high', 'medium', 'low']).optional(),
   matchType: z.enum(['debut', 'milestone', 'final', 'knockout', 'regular']).optional(),
@@ -77,19 +78,52 @@ const matchSchema = z.object({
 
 const performanceSchema = z.object({
   matchId: z.string().min(1, 'Match selection is required'),
-  
+
   // Match context
   battingPosition: z.number().optional(),
   bowlingPosition: z.enum(['opening', 'middle', 'death']).optional(),
-  innings: z.number().min(1).max(2).optional(),
+  innings: z.number().min(1).max(4).optional(), // Extended to 4 for Test matches
   isChasing: z.boolean().optional(),
   target: z.number().optional(),
   requiredRunRate: z.number().optional(),
   isCaptain: z.boolean().optional(),
   isWicketKeeper: z.boolean().optional(),
   fieldingPosition: z.string().optional(),
-  
-  // Batting performance
+
+  // Batting performance (can be innings-specific)
+  firstInnings: z.object({
+    runs: z.number().min(0).optional(),
+    ballsFaced: z.number().min(0).optional(),
+    fours: z.number().min(0).optional(),
+    sixes: z.number().min(0).optional(),
+    singles: z.number().min(0).optional(),
+    twos: z.number().min(0).optional(),
+    threes: z.number().min(0).optional(),
+    dotBalls: z.number().min(0).optional(),
+    dismissalType: z.string().optional(),
+    dismissalBowler: z.string().optional(),
+    dismissalFielder: z.string().optional(),
+    dismissalOver: z.number().optional(),
+    dismissalBall: z.number().optional(),
+  }).optional(),
+
+  secondInnings: z.object({
+    runs: z.number().min(0).optional(),
+    ballsFaced: z.number().min(0).optional(),
+    fours: z.number().min(0).optional(),
+    sixes: z.number().min(0).optional(),
+    singles: z.number().min(0).optional(),
+    twos: z.number().min(0).optional(),
+    threes: z.number().min(0).optional(),
+    dotBalls: z.number().min(0).optional(),
+    dismissalType: z.string().optional(),
+    dismissalBowler: z.string().optional(),
+    dismissalFielder: z.string().optional(),
+    dismissalOver: z.number().optional(),
+    dismissalBall: z.number().optional(),
+  }).optional(),
+
+  // Legacy fields for single innings matches (ODI, T20)
   runs: z.number().min(0).optional(),
   ballsFaced: z.number().min(0).optional(),
   fours: z.number().min(0).optional(),
@@ -98,23 +132,52 @@ const performanceSchema = z.object({
   twos: z.number().min(0).optional(),
   threes: z.number().min(0).optional(),
   dotBalls: z.number().min(0).optional(),
-  
-  // Batting phases
+
+  // Batting phases (for limited overs)
   powerplayRuns: z.number().min(0).optional(),
   powerplayBalls: z.number().min(0).optional(),
   middleOversRuns: z.number().min(0).optional(),
   middleOversBalls: z.number().min(0).optional(),
   deathOversRuns: z.number().min(0).optional(),
   deathOversBalls: z.number().min(0).optional(),
-  
-  // Dismissal
+
+  // Dismissal (for single innings)
   dismissalType: z.string().optional(),
   dismissalBowler: z.string().optional(),
   dismissalFielder: z.string().optional(),
   dismissalOver: z.number().optional(),
   dismissalBall: z.number().optional(),
-  
-  // Bowling performance
+
+  // Bowling performance (can be innings-specific)
+  firstInningsBowling: z.object({
+    overs: z.number().min(0).optional(),
+    maidens: z.number().min(0).optional(),
+    runsConceded: z.number().min(0).optional(),
+    wickets: z.number().min(0).optional(),
+    dotBallsBowled: z.number().min(0).optional(),
+    wides: z.number().min(0).optional(),
+    noBalls: z.number().min(0).optional(),
+    caughtWickets: z.number().min(0).optional(),
+    bowledWickets: z.number().min(0).optional(),
+    lbwWickets: z.number().min(0).optional(),
+    stumpedWickets: z.number().min(0).optional(),
+  }).optional(),
+
+  secondInningsBowling: z.object({
+    overs: z.number().min(0).optional(),
+    maidens: z.number().min(0).optional(),
+    runsConceded: z.number().min(0).optional(),
+    wickets: z.number().min(0).optional(),
+    dotBallsBowled: z.number().min(0).optional(),
+    wides: z.number().min(0).optional(),
+    noBalls: z.number().min(0).optional(),
+    caughtWickets: z.number().min(0).optional(),
+    bowledWickets: z.number().min(0).optional(),
+    lbwWickets: z.number().min(0).optional(),
+    stumpedWickets: z.number().min(0).optional(),
+  }).optional(),
+
+  // Legacy bowling fields for single innings matches
   overs: z.number().min(0).optional(),
   maidens: z.number().min(0).optional(),
   runsConceded: z.number().min(0).optional(),
@@ -122,13 +185,13 @@ const performanceSchema = z.object({
   dotBallsBowled: z.number().min(0).optional(),
   wides: z.number().min(0).optional(),
   noBalls: z.number().min(0).optional(),
-  
-  // Wicket types
+
+  // Wicket types (legacy)
   caughtWickets: z.number().min(0).optional(),
   bowledWickets: z.number().min(0).optional(),
   lbwWickets: z.number().min(0).optional(),
   stumpedWickets: z.number().min(0).optional(),
-  
+
   // Fielding
   catches: z.number().min(0).optional(),
   stumpings: z.number().min(0).optional(),
@@ -152,7 +215,12 @@ type MatchFormData = z.infer<typeof matchSchema>;
 type PerformanceFormData = z.infer<typeof performanceSchema>;
 
 export default function DataEntryPage() {
-  const [activeTab, setActiveTab] = useState<'player' | 'match' | 'performance' | 'series'>('player');
+  const [activeTab, setActiveTab] = useState<'player' | 'match' | 'performance' | 'series'>('series'); // Default to series
+  const [currentStep, setCurrentStep] = useState<'series' | 'match' | 'performance'>('series');
+  const [createdSeriesId, setCreatedSeriesId] = useState<string | null>(null);
+  const [createdSeriesName, setCreatedSeriesName] = useState<string | null>(null);
+  const [matchesCreatedCount, setMatchesCreatedCount] = useState(0);
+
   const [matches, setMatches] = useState<Array<{
     _id: string;
     opponent: string;
@@ -179,6 +247,7 @@ export default function DataEntryPage() {
     }>;
   } | null>(null);
   const [checkingPlayer, setCheckingPlayer] = useState(true);
+  const [formsReady, setFormsReady] = useState(false);
   const [editingMatch, setEditingMatch] = useState<{
     _id: string;
     level: string;
@@ -193,6 +262,41 @@ export default function DataEntryPage() {
     manOfTheMatch?: string;
   } | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [venues, setVenues] = useState<Array<{
+    _id: string;
+    name: string;
+    city: string;
+    country: string;
+    capacity?: number;
+    pitchType?: string;
+  }>>([]);
+  const [series, setSeries] = useState<Array<{
+    _id: string;
+    name: string;
+    type: string;
+    format: string;
+    level: string;
+  }>>([]);
+  const [selectedMatchFormat, setSelectedMatchFormat] = useState<string>('');
+  const [matchCreationStep, setMatchCreationStep] = useState<'series' | 'venue' | 'conditions' | 'details'>('series');
+  const [selectedSeries, setSelectedSeries] = useState<{
+    _id: string;
+    name: string;
+    type: string;
+    format: string;
+    level: string;
+    teams: Array<{ name: string; isHome: boolean }>;
+    hostCountry: string;
+  } | null>(null);
+  const [availableOpponents, setAvailableOpponents] = useState<string[]>([]);
+  const [filteredVenues, setFilteredVenues] = useState<Array<{
+    _id: string;
+    name: string;
+    city: string;
+    country: string;
+    capacity?: number;
+    pitchType?: string;
+  }>>([]);
 
   const playerForm = useForm<PlayerFormData>({
     resolver: zodResolver(playerSchema),
@@ -204,10 +308,20 @@ export default function DataEntryPage() {
 
   const matchForm = useForm<MatchFormData>({
     resolver: zodResolver(matchSchema),
+    defaultValues: {
+      level: 'domestic',
+      format: 'ODI',
+      date: '',
+      venue: '',
+      opponent: '',
+    },
   });
 
   const performanceForm = useForm<PerformanceFormData>({
     resolver: zodResolver(performanceSchema),
+    defaultValues: {
+      matchId: '',
+    },
   });
 
   const checkExistingPlayer = useCallback(async () => {
@@ -247,10 +361,20 @@ export default function DataEntryPage() {
     checkExistingPlayer();
   }, [checkExistingPlayer]);
 
-  // Fetch matches when performance tab is selected
+  // Ensure forms are ready before allowing operations
+  useEffect(() => {
+    if (matchForm && performanceForm && playerForm && playerUpdateForm) {
+      setFormsReady(true);
+    }
+  }, [matchForm, performanceForm, playerForm, playerUpdateForm]);
+
+  // Fetch data when tabs are selected
   useEffect(() => {
     if (activeTab === 'performance') {
       fetchMatches();
+    } else if (activeTab === 'match') {
+      fetchVenues();
+      fetchSeries();
     }
   }, [activeTab]);
 
@@ -266,6 +390,104 @@ export default function DataEntryPage() {
     }
   };
 
+  const fetchVenues = async () => {
+    try {
+      const response = await fetch('/api/venues');
+      const data = await response.json();
+      if (data.success) {
+        setVenues(data.venues);
+      }
+    } catch {
+      console.error('Error fetching venues');
+    }
+  };
+
+  const fetchSeries = async () => {
+    try {
+      const response = await fetch('/api/series');
+      const data = await response.json();
+      if (data.success) {
+        setSeries(data.series);
+      }
+    } catch {
+      console.error('Error fetching series');
+    }
+  };
+
+  const handleSeriesSelection = async (seriesId: string) => {
+    if (seriesId === 'none') {
+      setSelectedSeries(null);
+      setAvailableOpponents([]);
+      setFilteredVenues([]);
+      setMatchCreationStep('series');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/series/${seriesId}`);
+      const data = await response.json();
+      if (data.success) {
+        const seriesData = data.series;
+        setSelectedSeries(seriesData);
+
+        // Auto-populate form fields from series (with safety checks)
+        if (matchForm?.setValue) {
+          try {
+            matchForm.setValue('level', seriesData.level);
+            matchForm.setValue('format', seriesData.format);
+            matchForm.setValue('series', seriesData.name);
+            matchForm.setValue('seriesType', seriesData.type);
+            matchForm.setValue('tournament', seriesData.name);
+            matchForm.setValue('totalMatches', seriesData.totalMatches);
+          } catch (formError) {
+            console.error('Error setting form values:', formError);
+          }
+        }
+
+        // Set available opponents (exclude home team)
+        const opponents = seriesData.teams
+          .filter((team: { name: string; isHome: boolean }) => !team.isHome)
+          .map((team: { name: string; isHome: boolean }) => team.name);
+        setAvailableOpponents(opponents);
+
+        // Filter venues by host country
+        const countryVenues = venues.filter(venue => venue.country === seriesData.hostCountry);
+        setFilteredVenues(countryVenues);
+
+        // Move to venue selection step
+        setMatchCreationStep('venue');
+      }
+    } catch (error) {
+      console.error('Error fetching series details:', error);
+    }
+  };
+
+  const handleVenueSelection = (venueName: string) => {
+    const selectedVenue = filteredVenues.find(v => v.name === venueName);
+    if (selectedVenue && matchForm?.setValue) {
+      try {
+        matchForm.setValue('venue', selectedVenue.name);
+        matchForm.setValue('city', selectedVenue.city);
+        matchForm.setValue('country', selectedVenue.country);
+        if (selectedVenue.capacity) {
+          matchForm.setValue('stadiumCapacity', selectedVenue.capacity);
+        }
+        // Move to conditions step
+        setMatchCreationStep('conditions');
+      } catch (formError) {
+        console.error('Error setting venue form values:', formError);
+      }
+    }
+  };
+
+  const resetMatchForm = () => {
+    setMatchCreationStep('series');
+    setSelectedSeries(null);
+    setAvailableOpponents([]);
+    setFilteredVenues([]);
+    matchForm.reset();
+  };
+
   const onSubmitPlayer = async (data: PlayerFormData) => {
     setLoading(true);
     try {
@@ -274,7 +496,7 @@ export default function DataEntryPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      
+
       if (response.ok) {
         alert('Player added successfully!');
         playerForm.reset();
@@ -295,7 +517,7 @@ export default function DataEntryPage() {
       alert('No existing player found');
       return;
     }
-    
+
     setLoading(true);
     try {
       const updateData = {
@@ -308,7 +530,7 @@ export default function DataEntryPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
       });
-      
+
       if (response.ok) {
         alert('Player updated successfully!');
         // Refresh player data
@@ -324,22 +546,27 @@ export default function DataEntryPage() {
   };
 
   const onSubmitMatch = async (data: MatchFormData) => {
+    if (!matchForm || !matchForm.formState) {
+      console.error('Form not properly initialized');
+      return;
+    }
+
     const isEditing = editingMatch !== null;
     setLoading(true);
     try {
       const url = isEditing ? `/api/matches/${editingMatch._id}` : '/api/matches';
       const method = isEditing ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      
+
       if (response.ok) {
         const result = await response.json();
         if (isEditing) {
-          setMatches(prev => prev.map(match => 
+          setMatches(prev => prev.map(match =>
             match._id === editingMatch._id ? result.match : match
           ));
           alert('Match updated successfully!');
@@ -347,13 +574,19 @@ export default function DataEntryPage() {
         } else {
           setMatches(prev => [...prev, result.match]);
           alert('Match added successfully!');
+          setMatchesCreatedCount(prev => prev + 1);
+          // If this is the first match, enable performance tab
+          if (matchesCreatedCount === 0) {
+            setCurrentStep('performance');
+          }
         }
         matchForm.reset();
         setRefreshTrigger(prev => prev + 1);
       } else {
         alert(isEditing ? 'Error updating match' : 'Error adding match');
       }
-    } catch {
+    } catch (error) {
+      console.error('Error submitting match:', error);
       alert(isEditing ? 'Error updating match' : 'Error adding match');
     }
     setLoading(false);
@@ -397,7 +630,7 @@ export default function DataEntryPage() {
       const response = await fetch(`/api/matches/${matchId}`, {
         method: 'DELETE',
       });
-      
+
       if (response.ok) {
         setMatches(prev => prev.filter(match => match._id !== matchId));
         alert('Match deleted successfully!');
@@ -421,6 +654,11 @@ export default function DataEntryPage() {
   };
 
   const onSubmitPerformance = async (data: PerformanceFormData) => {
+    if (!performanceForm || !performanceForm.formState) {
+      console.error('Performance form not properly initialized');
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await fetch('/api/performances', {
@@ -428,17 +666,28 @@ export default function DataEntryPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      
+
       if (response.ok) {
         alert('Performance added successfully!');
         performanceForm.reset();
       } else {
         alert('Error adding performance');
       }
-    } catch {
+    } catch (error) {
+      console.error('Error submitting performance:', error);
       alert('Error adding performance');
     }
     setLoading(false);
+  };
+
+  const handleSeriesCreated = (seriesId: string, seriesName: string) => {
+    setCreatedSeriesId(seriesId);
+    setCreatedSeriesName(seriesName);
+    setCurrentStep('match');
+    setActiveTab('match');
+
+    // Pre-select the series in the match form
+    handleSeriesSelection(seriesId);
   };
 
   // Component for creating a new player
@@ -637,7 +886,7 @@ export default function DataEntryPage() {
     };
 
     const updateTeam = (index: number, field: keyof TeamType, value: string) => {
-      const updatedTeams = teams.map((team: TeamType, i: number) => 
+      const updatedTeams = teams.map((team: TeamType, i: number) =>
         i === index ? { ...team, [field]: value } : team
       );
       setTeams(updatedTeams);
@@ -708,7 +957,7 @@ export default function DataEntryPage() {
                     Add Team
                   </Button>
                 </div>
-                
+
                 {teams.map((team: TeamType, index: number) => (
                   <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg">
                     <div className="space-y-2">
@@ -719,11 +968,11 @@ export default function DataEntryPage() {
                         placeholder="e.g., Mumbai Indians"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label>Level *</Label>
-                      <Select 
-                        value={team.level} 
+                      <Select
+                        value={team.level}
                         onValueChange={(value) => updateTeam(index, 'level', value)}
                       >
                         <SelectTrigger>
@@ -739,7 +988,7 @@ export default function DataEntryPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label>From Date *</Label>
                       <Input
@@ -748,7 +997,7 @@ export default function DataEntryPage() {
                         onChange={(e) => updateTeam(index, 'from', e.target.value)}
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label>To Date</Label>
                       <Input
@@ -757,12 +1006,12 @@ export default function DataEntryPage() {
                         onChange={(e) => updateTeam(index, 'to', e.target.value)}
                       />
                     </div>
-                    
+
                     <div className="flex items-end">
-                      <Button 
-                        type="button" 
-                        onClick={() => removeTeam(index)} 
-                        variant="destructive" 
+                      <Button
+                        type="button"
+                        onClick={() => removeTeam(index)}
+                        variant="destructive"
                         size="sm"
                         disabled={teams.length === 1}
                       >
@@ -783,12 +1032,12 @@ export default function DataEntryPage() {
     );
   };
 
-  if (checkingPlayer) {
+  if (checkingPlayer || !formsReady) {
     return (
       <div className="min-h-screen py-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Checking for existing player...</p>
+          <p>{checkingPlayer ? 'Checking for existing player...' : 'Initializing forms...'}</p>
         </div>
       </div>
     );
@@ -800,8 +1049,8 @@ export default function DataEntryPage() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Cricket Data Entry</h1>
           <p className="text-muted-foreground">
-            {existingPlayer 
-              ? `Managing data for ${existingPlayer?.fullName}` 
+            {existingPlayer
+              ? `Managing data for ${existingPlayer?.fullName}`
               : 'Enter player information, match details, and performance statistics'
             }
           </p>
@@ -813,13 +1062,31 @@ export default function DataEntryPage() {
             </div>
           )}
         </div>
-        
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'player' | 'match' | 'performance' | 'series')} className="w-full">
+
+        <WorkflowProgress
+          currentStep={currentStep}
+          seriesCreated={!!createdSeriesId}
+          matchesCreated={matchesCreatedCount > 0}
+          matchCount={matchesCreatedCount}
+        />
+
+        <Tabs value={activeTab} onValueChange={(value) => {
+          // Prevent navigation if steps are not completed
+          if (value === 'match' && !createdSeriesId) {
+            alert('Please create a series/tournament first');
+            return;
+          }
+          if (value === 'performance' && matchesCreatedCount === 0) {
+            alert('Please create matches first');
+            return;
+          }
+          setActiveTab(value as 'player' | 'match' | 'performance' | 'series');
+        }} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="player">Player Info</TabsTrigger>
-            <TabsTrigger value="match">Match Details</TabsTrigger>
-            <TabsTrigger value="series">Series/Tournament</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
+            <TabsTrigger value="series">Series & Tournaments</TabsTrigger>
+            <TabsTrigger value="match" disabled={!createdSeriesId}>Match Details</TabsTrigger>
+            <TabsTrigger value="performance" disabled={matchesCreatedCount === 0}>Performance</TabsTrigger>
           </TabsList>
 
           <TabsContent value="player">
@@ -838,7 +1105,7 @@ export default function DataEntryPage() {
                     {editingMatch ? 'Edit Match Details' : 'Match Details'}
                   </CardTitle>
                   <CardDescription>
-                    {editingMatch 
+                    {editingMatch
                       ? 'Update match information including venue, opponent, and match conditions'
                       : 'Enter match information including venue, opponent, and match conditions'
                     }
@@ -852,375 +1119,427 @@ export default function DataEntryPage() {
                   )}
                 </CardHeader>
                 <CardContent>
-                <form onSubmit={matchForm.handleSubmit(onSubmitMatch)} className="space-y-8">
-                  {/* Basic Match Information */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Basic Match Information</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label>Level *</Label>
-                        <Select onValueChange={(value) => matchForm.setValue('level', value as 'under19-international' | 'domestic' | 'Ranji' | 'IPL' | 'List-A' | 'international')}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select level" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="under19-international">Under-19 International</SelectItem>
-                            <SelectItem value="domestic">Domestic</SelectItem>
-                            <SelectItem value="Ranji">Ranji Trophy</SelectItem>
-                            <SelectItem value="IPL">IPL</SelectItem>
-                            <SelectItem value="List-A">List-A</SelectItem>
-                            <SelectItem value="international">International</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {matchForm.formState.errors.level && (
-                          <p className="text-destructive text-sm">{matchForm.formState.errors.level.message}</p>
-                        )}
+                  <div className="space-y-6">
+                    {/* Progress Indicator */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center space-x-4">
+                        <div className={`flex items-center space-x-2 ${matchCreationStep === 'series' ? 'text-primary' : (matchCreationStep === 'venue' || matchCreationStep === 'conditions' || matchCreationStep === 'details') ? 'text-green-600' : 'text-muted-foreground'}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${matchCreationStep === 'series' ? 'bg-primary text-primary-foreground' : (matchCreationStep === 'venue' || matchCreationStep === 'conditions' || matchCreationStep === 'details') ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground'}`}>
+                            1
+                          </div>
+                          <span className="text-sm font-medium">Series</span>
+                        </div>
+                        <div className={`w-8 h-0.5 ${(matchCreationStep === 'venue' || matchCreationStep === 'conditions' || matchCreationStep === 'details') ? 'bg-green-600' : 'bg-muted'}`}></div>
+                        <div className={`flex items-center space-x-2 ${matchCreationStep === 'venue' ? 'text-primary' : ['conditions', 'details'].includes(matchCreationStep) ? 'text-green-600' : 'text-muted-foreground'}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${matchCreationStep === 'venue' ? 'bg-primary text-primary-foreground' : ['conditions', 'details'].includes(matchCreationStep) ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground'}`}>
+                            2
+                          </div>
+                          <span className="text-sm font-medium">Venue</span>
+                        </div>
+                        <div className={`w-8 h-0.5 ${['conditions', 'details'].includes(matchCreationStep) ? 'bg-green-600' : 'bg-muted'}`}></div>
+                        <div className={`flex items-center space-x-2 ${matchCreationStep === 'conditions' ? 'text-primary' : matchCreationStep === 'details' ? 'text-green-600' : 'text-muted-foreground'}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${matchCreationStep === 'conditions' ? 'bg-primary text-primary-foreground' : matchCreationStep === 'details' ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground'}`}>
+                            3
+                          </div>
+                          <span className="text-sm font-medium">Conditions</span>
+                        </div>
+                        <div className={`w-8 h-0.5 ${matchCreationStep === 'details' ? 'bg-green-600' : 'bg-muted'}`}></div>
+                        <div className={`flex items-center space-x-2 ${matchCreationStep === 'details' ? 'text-primary' : 'text-muted-foreground'}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${matchCreationStep === 'details' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                            4
+                          </div>
+                          <span className="text-sm font-medium">Details</span>
+                        </div>
                       </div>
-
-                      <div className="space-y-2">
-                        <Label>Format *</Label>
-                        <Select onValueChange={(value) => matchForm.setValue('format', value as 'Test' | 'ODI' | 'T20' | 'First-class' | 'List-A' | 'T20-domestic')}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select format" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Test">Test</SelectItem>
-                            <SelectItem value="ODI">ODI</SelectItem>
-                            <SelectItem value="T20">T20</SelectItem>
-                            <SelectItem value="First-class">First-class</SelectItem>
-                            <SelectItem value="List-A">List-A</SelectItem>
-                            <SelectItem value="T20-domestic">T20 Domestic</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {matchForm.formState.errors.format && (
-                          <p className="text-destructive text-sm">{matchForm.formState.errors.format.message}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="date">Match Date *</Label>
-                        <Input
-                          id="date"
-                          type="date"
-                          {...matchForm.register('date')}
-                        />
-                        {matchForm.formState.errors.date && (
-                          <p className="text-destructive text-sm">{matchForm.formState.errors.date.message}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="opponent">Opponent *</Label>
-                        <Input
-                          id="opponent"
-                          {...matchForm.register('opponent')}
-                          placeholder="e.g., Australia, Mumbai Indians"
-                        />
-                        {matchForm.formState.errors.opponent && (
-                          <p className="text-destructive text-sm">{matchForm.formState.errors.opponent.message}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="venue">Venue *</Label>
-                        <Input
-                          id="venue"
-                          {...matchForm.register('venue')}
-                          placeholder="e.g., Eden Gardens, Kolkata"
-                        />
-                        {matchForm.formState.errors.venue && (
-                          <p className="text-destructive text-sm">{matchForm.formState.errors.venue.message}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="city">City</Label>
-                        <Input
-                          id="city"
-                          {...matchForm.register('city')}
-                          placeholder="e.g., Mumbai"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="country">Country</Label>
-                        <Input
-                          id="country"
-                          {...matchForm.register('country')}
-                          placeholder="e.g., India"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="stadiumCapacity">Stadium Capacity</Label>
-                        <Input
-                          id="stadiumCapacity"
-                          type="number"
-                          {...matchForm.register('stadiumCapacity', { valueAsNumber: true })}
-                          placeholder="e.g., 68000"
-                        />
-                      </div>
+                      <Button type="button" onClick={resetMatchForm} variant="outline" size="sm">
+                        Reset Form
+                      </Button>
                     </div>
+
+                    <form onSubmit={matchForm?.handleSubmit ? matchForm.handleSubmit(onSubmitMatch) : (e) => e.preventDefault()} className="space-y-8">
+                      {/* Step 1: Series Selection */}
+                      {matchCreationStep === 'series' && (
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-medium">Step 1: Select Series/Tournament</h3>
+                          <p className="text-muted-foreground">
+                            Choose an existing series/tournament or create a new one. This will auto-populate match details.
+                          </p>
+
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Series/Tournament *</Label>
+                              <Select onValueChange={handleSeriesSelection}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a series/tournament" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">No Series (Standalone Match)</SelectItem>
+                                  {series.map((s) => (
+                                    <SelectItem key={s._id} value={s._id}>
+                                      {s.name} ({s.format} - {s.level})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {series.length === 0 && (
+                              <div className="p-4 bg-muted/50 rounded-lg">
+                                <p className="text-sm text-muted-foreground mb-3">
+                                  No series found. Create a series first to link matches automatically.
+                                </p>
+                                <Button
+                                  type="button"
+                                  onClick={() => setActiveTab('series')}
+                                  variant="outline"
+                                >
+                                  Create Series/Tournament
+                                </Button>
+                              </div>
+                            )}
+
+                            {selectedSeries && (
+                              <div className="p-4 bg-primary/10 rounded-lg">
+                                <h4 className="font-medium mb-2">Selected Series: {selectedSeries.name}</h4>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                  <div>
+                                    <span className="text-muted-foreground">Format:</span> {selectedSeries.format}
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Level:</span> {selectedSeries.level}
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Type:</span> {selectedSeries.type}
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Host Country:</span> {selectedSeries.hostCountry}
+                                  </div>
+                                </div>
+                                <div className="mt-3">
+                                  <span className="text-muted-foreground text-sm">Available Opponents:</span>
+                                  <div className="flex flex-wrap gap-2 mt-1">
+                                    {availableOpponents.map((opponent) => (
+                                      <span key={opponent} className="px-2 py-1 bg-background rounded text-xs">
+                                        {opponent}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Step 2: Venue Selection */}
+                      {matchCreationStep === 'venue' && (
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-medium">Step 2: Select Venue & Opponent</h3>
+                          <p className="text-muted-foreground">
+                            Choose the venue and opponent for this match.
+                          </p>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                              <Label>Opponent *</Label>
+                              <Select onValueChange={(value) => matchForm?.setValue && matchForm.setValue('opponent', value)}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select opponent" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {availableOpponents.map((opponent) => (
+                                    <SelectItem key={opponent} value={opponent}>
+                                      {opponent}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {matchForm.formState?.errors?.opponent && (
+                                <p className="text-destructive text-sm">{matchForm.formState.errors.opponent.message}</p>
+                              )}
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Venue *</Label>
+                              <Select onValueChange={handleVenueSelection}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select venue" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {filteredVenues.map((venue) => (
+                                    <SelectItem key={venue._id} value={venue.name}>
+                                      {venue.name}, {venue.city}
+                                      {venue.capacity && ` (${venue.capacity.toLocaleString()})`}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {matchForm.formState?.errors?.venue && (
+                                <p className="text-destructive text-sm">{matchForm.formState.errors.venue.message}</p>
+                              )}
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="date">Match Date *</Label>
+                              <Input
+                                id="date"
+                                type="date"
+                                {...(matchForm?.register ? matchForm.register('date') : {})}
+                              />
+                              {matchForm.formState?.errors?.date && (
+                                <p className="text-destructive text-sm">{matchForm.formState.errors.date.message}</p>
+                              )}
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="matchNumber">Match Number</Label>
+                              <Input
+                                id="matchNumber"
+                                type="number"
+                                {...(matchForm?.register ? matchForm.register('matchNumber', { valueAsNumber: true }) : {})}
+                                placeholder="e.g., 3"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button type="button" onClick={() => setMatchCreationStep('series')} variant="outline">
+                              Back
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={() => setMatchCreationStep('conditions')}
+                              disabled={!matchForm.getValues('opponent') || !matchForm.getValues('venue') || !matchForm.getValues('date')}
+                            >
+                              Continue to Conditions
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Step 3: Match Conditions */}
+                      {matchCreationStep === 'conditions' && (
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-medium">Step 3: Match Conditions</h3>
+                          <p className="text-muted-foreground">
+                            Set the playing conditions and match environment.
+                          </p>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                              <Label>Weather</Label>
+                              <Select onValueChange={(value) => matchForm?.setValue && matchForm.setValue('weather', value as 'sunny' | 'cloudy' | 'overcast' | 'drizzle' | 'rain')}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select weather" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="sunny">Sunny</SelectItem>
+                                  <SelectItem value="cloudy">Cloudy</SelectItem>
+                                  <SelectItem value="overcast">Overcast</SelectItem>
+                                  <SelectItem value="drizzle">Drizzle</SelectItem>
+                                  <SelectItem value="rain">Rain</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Pitch Condition</Label>
+                              <Select onValueChange={(value) => matchForm?.setValue && matchForm.setValue('pitchCondition', value as 'green' | 'dry' | 'dusty' | 'flat' | 'two-paced')}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select pitch condition" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="green">Green</SelectItem>
+                                  <SelectItem value="dry">Dry</SelectItem>
+                                  <SelectItem value="dusty">Dusty</SelectItem>
+                                  <SelectItem value="flat">Flat</SelectItem>
+                                  <SelectItem value="two-paced">Two-paced</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Pitch Type</Label>
+                              <Select onValueChange={(value) => matchForm?.setValue && matchForm.setValue('pitchType', value as 'batting' | 'bowling' | 'balanced')}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select pitch type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="batting">Batting</SelectItem>
+                                  <SelectItem value="bowling">Bowling</SelectItem>
+                                  <SelectItem value="balanced">Balanced</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Home/Away</Label>
+                              <Select onValueChange={(value) => matchForm?.setValue && matchForm.setValue('homeAway', value as 'home' | 'away' | 'neutral')}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select home/away" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="home">Home</SelectItem>
+                                  <SelectItem value="away">Away</SelectItem>
+                                  <SelectItem value="neutral">Neutral</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id="dayNight"
+                                {...matchForm.register('dayNight')}
+                                className="rounded"
+                              />
+                              <Label htmlFor="dayNight">Day-Night Match</Label>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button type="button" onClick={() => setMatchCreationStep('venue')} variant="outline">
+                              Back
+                            </Button>
+                            <Button type="button" onClick={() => setMatchCreationStep('details')}>
+                              Continue to Details
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Step 4: Match Details */}
+                      {matchCreationStep === 'details' && (
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-medium">Step 4: Match Details</h3>
+                          <p className="text-muted-foreground">
+                            Add final match details and submit.
+                          </p>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                              <Label htmlFor="result">Result</Label>
+                              <Input
+                                id="result"
+                                {...matchForm.register('result')}
+                                placeholder="e.g., Won by 5 wickets"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="tossWinner">Toss Winner</Label>
+                              <Input
+                                id="tossWinner"
+                                {...matchForm.register('tossWinner')}
+                                placeholder="Team that won the toss"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Toss Decision</Label>
+                              <Select onValueChange={(value) => matchForm.setValue('tossDecision', value as 'bat' | 'bowl')}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select decision" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="bat">Bat</SelectItem>
+                                  <SelectItem value="bowl">Bowl</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="manOfTheMatch">Man of the Match</Label>
+                              <Input
+                                id="manOfTheMatch"
+                                {...matchForm.register('manOfTheMatch')}
+                                placeholder="Player name"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="captain">Captain</Label>
+                              <Input
+                                id="captain"
+                                {...matchForm.register('captain')}
+                                placeholder="Team captain"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="wicketKeeper">Wicket Keeper</Label>
+                              <Input
+                                id="wicketKeeper"
+                                {...matchForm.register('wicketKeeper')}
+                                placeholder="Wicket keeper name"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Match Importance</Label>
+                              <Select onValueChange={(value) => matchForm.setValue('importance', value as 'high' | 'medium' | 'low')}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select importance" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="high">High</SelectItem>
+                                  <SelectItem value="medium">Medium</SelectItem>
+                                  <SelectItem value="low">Low</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Match Type</Label>
+                              <Select onValueChange={(value) => matchForm.setValue('matchType', value as 'debut' | 'milestone' | 'final' | 'knockout' | 'regular')}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select match type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="debut">Debut</SelectItem>
+                                  <SelectItem value="milestone">Milestone</SelectItem>
+                                  <SelectItem value="final">Final</SelectItem>
+                                  <SelectItem value="knockout">Knockout</SelectItem>
+                                  <SelectItem value="regular">Regular</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button type="button" onClick={() => setMatchCreationStep('conditions')} variant="outline">
+                              Back
+                            </Button>
+                            <Button type="submit" disabled={loading || !formsReady}>
+                              {loading
+                                ? (editingMatch ? 'Updating Match...' : 'Adding Match...')
+                                : (editingMatch ? 'Update Match' : 'Add Match')
+                              }
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </form>
                   </div>
+                </CardContent>
+              </Card>
 
-                  {/* Series & Tournament Information */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Series & Tournament Information</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="series">Series</Label>
-                        <Input
-                          id="series"
-                          {...matchForm.register('series')}
-                          placeholder="e.g., India vs Australia Test Series 2023"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Enter the series name to link this match to a series. You can create series in the Series/Tournament tab.
-                        </p>
-                      </div>
+              {/* Match Summary */}
+              <MatchSummary matches={matches} />
 
-                      <div className="space-y-2">
-                        <Label>Series Type</Label>
-                        <Select onValueChange={(value) => matchForm.setValue('seriesType', value as 'bilateral' | 'triangular' | 'tournament' | 'league')}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select series type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="bilateral">Bilateral</SelectItem>
-                            <SelectItem value="triangular">Triangular</SelectItem>
-                            <SelectItem value="tournament">Tournament</SelectItem>
-                            <SelectItem value="league">League</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="tournament">Tournament</Label>
-                        <Input
-                          id="tournament"
-                          {...matchForm.register('tournament')}
-                          placeholder="e.g., World Cup, IPL"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="matchNumber">Match Number</Label>
-                        <Input
-                          id="matchNumber"
-                          type="number"
-                          {...matchForm.register('matchNumber', { valueAsNumber: true })}
-                          placeholder="e.g., 3"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="totalMatches">Total Matches in Series</Label>
-                        <Input
-                          id="totalMatches"
-                          type="number"
-                          {...matchForm.register('totalMatches', { valueAsNumber: true })}
-                          placeholder="e.g., 5"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Match Conditions */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Match Conditions</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label>Weather</Label>
-                        <Select onValueChange={(value) => matchForm.setValue('weather', value as 'sunny' | 'cloudy' | 'overcast' | 'drizzle' | 'rain')}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select weather" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="sunny">Sunny</SelectItem>
-                            <SelectItem value="cloudy">Cloudy</SelectItem>
-                            <SelectItem value="overcast">Overcast</SelectItem>
-                            <SelectItem value="drizzle">Drizzle</SelectItem>
-                            <SelectItem value="rain">Rain</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Pitch Condition</Label>
-                        <Select onValueChange={(value) => matchForm.setValue('pitchCondition', value as 'green' | 'dry' | 'dusty' | 'flat' | 'two-paced')}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select pitch condition" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="green">Green</SelectItem>
-                            <SelectItem value="dry">Dry</SelectItem>
-                            <SelectItem value="dusty">Dusty</SelectItem>
-                            <SelectItem value="flat">Flat</SelectItem>
-                            <SelectItem value="two-paced">Two-paced</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Pitch Type</Label>
-                        <Select onValueChange={(value) => matchForm.setValue('pitchType', value as 'batting' | 'bowling' | 'balanced')}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select pitch type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="batting">Batting</SelectItem>
-                            <SelectItem value="bowling">Bowling</SelectItem>
-                            <SelectItem value="balanced">Balanced</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Home/Away</Label>
-                        <Select onValueChange={(value) => matchForm.setValue('homeAway', value as 'home' | 'away' | 'neutral')}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select home/away" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="home">Home</SelectItem>
-                            <SelectItem value="away">Away</SelectItem>
-                            <SelectItem value="neutral">Neutral</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id="dayNight"
-                          {...matchForm.register('dayNight')}
-                          className="rounded"
-                        />
-                        <Label htmlFor="dayNight">Day-Night Match</Label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Match Details */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Match Details</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="result">Result</Label>
-                        <Input
-                          id="result"
-                          {...matchForm.register('result')}
-                          placeholder="e.g., Won by 5 wickets"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="tossWinner">Toss Winner</Label>
-                        <Input
-                          id="tossWinner"
-                          {...matchForm.register('tossWinner')}
-                          placeholder="Team that won the toss"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Toss Decision</Label>
-                        <Select onValueChange={(value) => matchForm.setValue('tossDecision', value as 'bat' | 'bowl')}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select decision" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="bat">Bat</SelectItem>
-                            <SelectItem value="bowl">Bowl</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="manOfTheMatch">Man of the Match</Label>
-                        <Input
-                          id="manOfTheMatch"
-                          {...matchForm.register('manOfTheMatch')}
-                          placeholder="Player name"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="captain">Captain</Label>
-                        <Input
-                          id="captain"
-                          {...matchForm.register('captain')}
-                          placeholder="Team captain"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="wicketKeeper">Wicket Keeper</Label>
-                        <Input
-                          id="wicketKeeper"
-                          {...matchForm.register('wicketKeeper')}
-                          placeholder="Wicket keeper name"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Match Importance</Label>
-                        <Select onValueChange={(value) => matchForm.setValue('importance', value as 'high' | 'medium' | 'low')}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select importance" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="high">High</SelectItem>
-                            <SelectItem value="medium">Medium</SelectItem>
-                            <SelectItem value="low">Low</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Match Type</Label>
-                        <Select onValueChange={(value) => matchForm.setValue('matchType', value as 'debut' | 'milestone' | 'final' | 'knockout' | 'regular')}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select match type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="debut">Debut</SelectItem>
-                            <SelectItem value="milestone">Milestone</SelectItem>
-                            <SelectItem value="final">Final</SelectItem>
-                            <SelectItem value="knockout">Knockout</SelectItem>
-                            <SelectItem value="regular">Regular</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button type="submit" disabled={loading} className="w-full">
-                    {loading 
-                      ? (editingMatch ? 'Updating Match...' : 'Adding Match...') 
-                      : (editingMatch ? 'Update Match' : 'Add Match')
-                    }
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            {/* Match Summary */}
-            <MatchSummary matches={matches} />
-
-            {/* Match Table */}
-            <MatchTable 
-              onEditMatch={handleEditMatch} 
-              onDeleteMatch={handleDeleteMatch}
-              refreshTrigger={refreshTrigger}
-              onRefresh={handleRefreshMatches}
-            />
+              {/* Match Table */}
+              <MatchTable
+                onEditMatch={handleEditMatch}
+                onDeleteMatch={handleDeleteMatch}
+                refreshTrigger={refreshTrigger}
+                onRefresh={handleRefreshMatches}
+              />
             </div>
           </TabsContent>
 
           <TabsContent value="series">
             <div className="space-y-6">
-              <SeriesCreationForm />
+              <SeriesCreationForm onSeriesCreated={handleSeriesCreated} />
               <SeriesParticipationList />
             </div>
           </TabsContent>
@@ -1234,11 +1553,17 @@ export default function DataEntryPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={performanceForm.handleSubmit(onSubmitPerformance)} className="space-y-8">
+                <form onSubmit={performanceForm?.handleSubmit ? performanceForm.handleSubmit(onSubmitPerformance) : (e) => e.preventDefault()} className="space-y-8">
                   {/* Match Selection */}
                   <div className="space-y-2">
                     <Label>Select Match *</Label>
-                    <Select onValueChange={(value) => performanceForm.setValue('matchId', value)}>
+                    <Select onValueChange={(value) => {
+                      performanceForm.setValue('matchId', value);
+                      const selectedMatch = matches.find(m => m._id === value);
+                      if (selectedMatch) {
+                        setSelectedMatchFormat(selectedMatch.format);
+                      }
+                    }}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a match" />
                       </SelectTrigger>
@@ -1250,7 +1575,7 @@ export default function DataEntryPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    {performanceForm.formState.errors.matchId && (
+                    {performanceForm.formState?.errors?.matchId && (
                       <p className="text-destructive text-sm">{performanceForm.formState.errors.matchId.message}</p>
                     )}
                   </div>
@@ -1270,7 +1595,7 @@ export default function DataEntryPage() {
                           placeholder="e.g., 3"
                         />
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label>Bowling Position</Label>
                         <Select onValueChange={(value) => performanceForm.setValue('bowlingPosition', value as 'opening' | 'middle' | 'death')}>
@@ -1294,8 +1619,19 @@ export default function DataEntryPage() {
                           <SelectContent>
                             <SelectItem value="1">First Innings</SelectItem>
                             <SelectItem value="2">Second Innings</SelectItem>
+                            {(selectedMatchFormat === 'Test' || selectedMatchFormat === 'First-class') && (
+                              <>
+                                <SelectItem value="3">Third Innings</SelectItem>
+                                <SelectItem value="4">Fourth Innings</SelectItem>
+                              </>
+                            )}
                           </SelectContent>
                         </Select>
+                        {(selectedMatchFormat === 'Test' || selectedMatchFormat === 'First-class') && (
+                          <p className="text-xs text-muted-foreground">
+                            Test/First-class matches support up to 4 innings
+                          </p>
+                        )}
                       </div>
 
                       <div className="space-y-2">
@@ -1340,7 +1676,7 @@ export default function DataEntryPage() {
                           />
                           <Label htmlFor="isCaptain">Captain</Label>
                         </div>
-                        
+
                         <div className="flex items-center space-x-2">
                           <input
                             type="checkbox"
@@ -1367,80 +1703,225 @@ export default function DataEntryPage() {
                   {/* Batting Performance */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium">Batting Performance</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="runs">Runs</Label>
-                        <Input
-                          id="runs"
-                          type="number"
-                          {...performanceForm.register('runs', { valueAsNumber: true })}
-                          min="0"
-                        />
+
+                    {(selectedMatchFormat === 'Test' || selectedMatchFormat === 'First-class') ? (
+                      // Innings-wise batting for Test/First-class matches
+                      <div className="space-y-6">
+                        {/* First Innings Batting */}
+                        <div className="space-y-4">
+                          <h4 className="text-md font-medium">First Innings Batting</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="firstInnings.runs">Runs</Label>
+                              <Input
+                                id="firstInnings.runs"
+                                type="number"
+                                {...performanceForm.register('firstInnings.runs', { valueAsNumber: true })}
+                                min="0"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="firstInnings.ballsFaced">Balls Faced</Label>
+                              <Input
+                                id="firstInnings.ballsFaced"
+                                type="number"
+                                {...performanceForm.register('firstInnings.ballsFaced', { valueAsNumber: true })}
+                                min="0"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="firstInnings.fours">Fours</Label>
+                              <Input
+                                id="firstInnings.fours"
+                                type="number"
+                                {...performanceForm.register('firstInnings.fours', { valueAsNumber: true })}
+                                min="0"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="firstInnings.sixes">Sixes</Label>
+                              <Input
+                                id="firstInnings.sixes"
+                                type="number"
+                                {...performanceForm.register('firstInnings.sixes', { valueAsNumber: true })}
+                                min="0"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Dismissal Type</Label>
+                              <Select onValueChange={(value) => performanceForm.setValue('firstInnings.dismissalType', value)}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select dismissal" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="not_out">Not Out</SelectItem>
+                                  <SelectItem value="caught">Caught</SelectItem>
+                                  <SelectItem value="bowled">Bowled</SelectItem>
+                                  <SelectItem value="lbw">LBW</SelectItem>
+                                  <SelectItem value="run_out">Run Out</SelectItem>
+                                  <SelectItem value="stumped">Stumped</SelectItem>
+                                  <SelectItem value="hit_wicket">Hit Wicket</SelectItem>
+                                  <SelectItem value="retired">Retired</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="firstInnings.dismissalBowler">Dismissal Bowler</Label>
+                              <Input
+                                id="firstInnings.dismissalBowler"
+                                {...performanceForm.register('firstInnings.dismissalBowler')}
+                                placeholder="Bowler name"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Second Innings Batting */}
+                        <div className="space-y-4">
+                          <h4 className="text-md font-medium">Second Innings Batting</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="secondInnings.runs">Runs</Label>
+                              <Input
+                                id="secondInnings.runs"
+                                type="number"
+                                {...performanceForm.register('secondInnings.runs', { valueAsNumber: true })}
+                                min="0"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="secondInnings.ballsFaced">Balls Faced</Label>
+                              <Input
+                                id="secondInnings.ballsFaced"
+                                type="number"
+                                {...performanceForm.register('secondInnings.ballsFaced', { valueAsNumber: true })}
+                                min="0"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="secondInnings.fours">Fours</Label>
+                              <Input
+                                id="secondInnings.fours"
+                                type="number"
+                                {...performanceForm.register('secondInnings.fours', { valueAsNumber: true })}
+                                min="0"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="secondInnings.sixes">Sixes</Label>
+                              <Input
+                                id="secondInnings.sixes"
+                                type="number"
+                                {...performanceForm.register('secondInnings.sixes', { valueAsNumber: true })}
+                                min="0"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Dismissal Type</Label>
+                              <Select onValueChange={(value) => performanceForm.setValue('secondInnings.dismissalType', value)}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select dismissal" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="not_out">Not Out</SelectItem>
+                                  <SelectItem value="caught">Caught</SelectItem>
+                                  <SelectItem value="bowled">Bowled</SelectItem>
+                                  <SelectItem value="lbw">LBW</SelectItem>
+                                  <SelectItem value="run_out">Run Out</SelectItem>
+                                  <SelectItem value="stumped">Stumped</SelectItem>
+                                  <SelectItem value="hit_wicket">Hit Wicket</SelectItem>
+                                  <SelectItem value="retired">Retired</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="secondInnings.dismissalBowler">Dismissal Bowler</Label>
+                              <Input
+                                id="secondInnings.dismissalBowler"
+                                {...performanceForm.register('secondInnings.dismissalBowler')}
+                                placeholder="Bowler name"
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="ballsFaced">Balls Faced</Label>
-                        <Input
-                          id="ballsFaced"
-                          type="number"
-                          {...performanceForm.register('ballsFaced', { valueAsNumber: true })}
-                          min="0"
-                        />
+                    ) : (
+                      // Single innings batting for limited overs matches
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="runs">Runs</Label>
+                          <Input
+                            id="runs"
+                            type="number"
+                            {...performanceForm.register('runs', { valueAsNumber: true })}
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="ballsFaced">Balls Faced</Label>
+                          <Input
+                            id="ballsFaced"
+                            type="number"
+                            {...performanceForm.register('ballsFaced', { valueAsNumber: true })}
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="fours">Fours</Label>
+                          <Input
+                            id="fours"
+                            type="number"
+                            {...performanceForm.register('fours', { valueAsNumber: true })}
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="sixes">Sixes</Label>
+                          <Input
+                            id="sixes"
+                            type="number"
+                            {...performanceForm.register('sixes', { valueAsNumber: true })}
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="singles">Singles</Label>
+                          <Input
+                            id="singles"
+                            type="number"
+                            {...performanceForm.register('singles', { valueAsNumber: true })}
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="twos">Twos</Label>
+                          <Input
+                            id="twos"
+                            type="number"
+                            {...performanceForm.register('twos', { valueAsNumber: true })}
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="threes">Threes</Label>
+                          <Input
+                            id="threes"
+                            type="number"
+                            {...performanceForm.register('threes', { valueAsNumber: true })}
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dotBalls">Dot Balls</Label>
+                          <Input
+                            id="dotBalls"
+                            type="number"
+                            {...performanceForm.register('dotBalls', { valueAsNumber: true })}
+                            min="0"
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="fours">Fours</Label>
-                        <Input
-                          id="fours"
-                          type="number"
-                          {...performanceForm.register('fours', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="sixes">Sixes</Label>
-                        <Input
-                          id="sixes"
-                          type="number"
-                          {...performanceForm.register('sixes', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="singles">Singles</Label>
-                        <Input
-                          id="singles"
-                          type="number"
-                          {...performanceForm.register('singles', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="twos">Twos</Label>
-                        <Input
-                          id="twos"
-                          type="number"
-                          {...performanceForm.register('twos', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="threes">Threes</Label>
-                        <Input
-                          id="threes"
-                          type="number"
-                          {...performanceForm.register('threes', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="dotBalls">Dot Balls</Label>
-                        <Input
-                          id="dotBalls"
-                          type="number"
-                          {...performanceForm.register('dotBalls', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                    </div>
+                    )}
 
                     {/* Batting Phases */}
                     <h4 className="text-md font-medium mt-6">Batting by Phases</h4>
@@ -1505,12 +1986,22 @@ export default function DataEntryPage() {
                     <h4 className="text-md font-medium mt-6">Dismissal Details</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="dismissalType">Dismissal Type</Label>
-                        <Input
-                          id="dismissalType"
-                          {...performanceForm.register('dismissalType')}
-                          placeholder="e.g., caught, bowled, lbw"
-                        />
+                        <Label>Dismissal Type</Label>
+                        <Select onValueChange={(value) => performanceForm.setValue('dismissalType', value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select dismissal" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="not_out">Not Out</SelectItem>
+                            <SelectItem value="caught">Caught</SelectItem>
+                            <SelectItem value="bowled">Bowled</SelectItem>
+                            <SelectItem value="lbw">LBW</SelectItem>
+                            <SelectItem value="run_out">Run Out</SelectItem>
+                            <SelectItem value="stumped">Stumped</SelectItem>
+                            <SelectItem value="hit_wicket">Hit Wicket</SelectItem>
+                            <SelectItem value="retired">Retired</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="dismissalBowler">Dismissal Bowler</Label>
@@ -1555,72 +2046,167 @@ export default function DataEntryPage() {
                   {/* Bowling Performance */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium">Bowling Performance</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="overs">Overs</Label>
-                        <Input
-                          id="overs"
-                          type="number"
-                          step="0.1"
-                          {...performanceForm.register('overs', { valueAsNumber: true })}
-                          min="0"
-                        />
+
+                    {(selectedMatchFormat === 'Test' || selectedMatchFormat === 'First-class') ? (
+                      // Innings-wise bowling for Test/First-class matches
+                      <div className="space-y-6">
+                        {/* First Innings Bowling */}
+                        <div className="space-y-4">
+                          <h4 className="text-md font-medium">First Innings Bowling</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="firstInningsBowling.overs">Overs</Label>
+                              <Input
+                                id="firstInningsBowling.overs"
+                                type="number"
+                                step="0.1"
+                                {...performanceForm.register('firstInningsBowling.overs', { valueAsNumber: true })}
+                                min="0"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="firstInningsBowling.maidens">Maidens</Label>
+                              <Input
+                                id="firstInningsBowling.maidens"
+                                type="number"
+                                {...performanceForm.register('firstInningsBowling.maidens', { valueAsNumber: true })}
+                                min="0"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="firstInningsBowling.runsConceded">Runs Conceded</Label>
+                              <Input
+                                id="firstInningsBowling.runsConceded"
+                                type="number"
+                                {...performanceForm.register('firstInningsBowling.runsConceded', { valueAsNumber: true })}
+                                min="0"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="firstInningsBowling.wickets">Wickets</Label>
+                              <Input
+                                id="firstInningsBowling.wickets"
+                                type="number"
+                                {...performanceForm.register('firstInningsBowling.wickets', { valueAsNumber: true })}
+                                min="0"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Second Innings Bowling */}
+                        <div className="space-y-4">
+                          <h4 className="text-md font-medium">Second Innings Bowling</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="secondInningsBowling.overs">Overs</Label>
+                              <Input
+                                id="secondInningsBowling.overs"
+                                type="number"
+                                step="0.1"
+                                {...performanceForm.register('secondInningsBowling.overs', { valueAsNumber: true })}
+                                min="0"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="secondInningsBowling.maidens">Maidens</Label>
+                              <Input
+                                id="secondInningsBowling.maidens"
+                                type="number"
+                                {...performanceForm.register('secondInningsBowling.maidens', { valueAsNumber: true })}
+                                min="0"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="secondInningsBowling.runsConceded">Runs Conceded</Label>
+                              <Input
+                                id="secondInningsBowling.runsConceded"
+                                type="number"
+                                {...performanceForm.register('secondInningsBowling.runsConceded', { valueAsNumber: true })}
+                                min="0"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="secondInningsBowling.wickets">Wickets</Label>
+                              <Input
+                                id="secondInningsBowling.wickets"
+                                type="number"
+                                {...performanceForm.register('secondInningsBowling.wickets', { valueAsNumber: true })}
+                                min="0"
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="maidens">Maidens</Label>
-                        <Input
-                          id="maidens"
-                          type="number"
-                          {...performanceForm.register('maidens', { valueAsNumber: true })}
-                          min="0"
-                        />
+                    ) : (
+                      // Single innings bowling for limited overs matches
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="overs">Overs</Label>
+                          <Input
+                            id="overs"
+                            type="number"
+                            step="0.1"
+                            {...performanceForm.register('overs', { valueAsNumber: true })}
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="maidens">Maidens</Label>
+                          <Input
+                            id="maidens"
+                            type="number"
+                            {...performanceForm.register('maidens', { valueAsNumber: true })}
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="runsConceded">Runs Conceded</Label>
+                          <Input
+                            id="runsConceded"
+                            type="number"
+                            {...performanceForm.register('runsConceded', { valueAsNumber: true })}
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="wickets">Wickets</Label>
+                          <Input
+                            id="wickets"
+                            type="number"
+                            {...performanceForm.register('wickets', { valueAsNumber: true })}
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dotBallsBowled">Dot Balls Bowled</Label>
+                          <Input
+                            id="dotBallsBowled"
+                            type="number"
+                            {...performanceForm.register('dotBallsBowled', { valueAsNumber: true })}
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="wides">Wides</Label>
+                          <Input
+                            id="wides"
+                            type="number"
+                            {...performanceForm.register('wides', { valueAsNumber: true })}
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="noBalls">No Balls</Label>
+                          <Input
+                            id="noBalls"
+                            type="number"
+                            {...performanceForm.register('noBalls', { valueAsNumber: true })}
+                            min="0"
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="runsConceded">Runs Conceded</Label>
-                        <Input
-                          id="runsConceded"
-                          type="number"
-                          {...performanceForm.register('runsConceded', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="wickets">Wickets</Label>
-                        <Input
-                          id="wickets"
-                          type="number"
-                          {...performanceForm.register('wickets', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="dotBallsBowled">Dot Balls Bowled</Label>
-                        <Input
-                          id="dotBallsBowled"
-                          type="number"
-                          {...performanceForm.register('dotBallsBowled', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="wides">Wides</Label>
-                        <Input
-                          id="wides"
-                          type="number"
-                          {...performanceForm.register('wides', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="noBalls">No Balls</Label>
-                        <Input
-                          id="noBalls"
-                          type="number"
-                          {...performanceForm.register('noBalls', { valueAsNumber: true })}
-                          min="0"
-                        />
-                      </div>
-                    </div>
+                    )}
 
                     {/* Wicket Types */}
                     <h4 className="text-md font-medium mt-6">Wicket Types</h4>
@@ -1698,7 +2284,7 @@ export default function DataEntryPage() {
                     </div>
                   </div>
 
-                  <Button type="submit" disabled={loading} className="w-full">
+                  <Button type="submit" disabled={loading || !formsReady} className="w-full">
                     {loading ? 'Adding Performance...' : 'Add Performance'}
                   </Button>
                 </form>

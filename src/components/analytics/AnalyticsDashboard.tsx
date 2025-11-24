@@ -10,6 +10,7 @@ import BowlingAnalytics from './BowlingAnalytics';
 import FieldingAnalytics from './FieldingAnalytics';
 import AdvancedMetrics from './AdvancedMetrics';
 import ComparisonAnalytics from './ComparisonAnalytics';
+import SeriesAnalytics from './SeriesAnalytics';
 import AnalyticsFiltersComponent, { AnalyticsFilters } from './AnalyticsFilters';
 import { RefreshCw } from 'lucide-react';
 
@@ -92,8 +93,8 @@ export default function AnalyticsDashboard() {
           <h1 className="text-3xl font-bold">Cricket Analytics Dashboard</h1>
           <p className="text-muted-foreground">Comprehensive performance analysis and insights</p>
         </div>
-        <Button 
-          onClick={handleRecalculate} 
+        <Button
+          onClick={handleRecalculate}
           disabled={isRecalculating}
           className="flex items-center gap-2"
         >
@@ -116,6 +117,7 @@ export default function AnalyticsDashboard() {
           <TabsTrigger value="bowling">⚾ Bowling Analytics</TabsTrigger>
           <TabsTrigger value="fielding">🧤 Fielding Analytics</TabsTrigger>
           <TabsTrigger value="advanced">📊 Advanced Metrics</TabsTrigger>
+          <TabsTrigger value="series">🏆 Series Analysis</TabsTrigger>
           <TabsTrigger value="comparison">⚖️ Comparison</TabsTrigger>
         </TabsList>
 
@@ -137,6 +139,10 @@ export default function AnalyticsDashboard() {
 
         <TabsContent value="advanced" className="space-y-4">
           <AdvancedMetrics />
+        </TabsContent>
+
+        <TabsContent value="series" className="space-y-4">
+          <SeriesAnalytics />
         </TabsContent>
 
         <TabsContent value="comparison" className="space-y-4">
