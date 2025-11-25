@@ -112,19 +112,44 @@ export default function CareerOverview() {
         return <div className="text-center p-8">No career data available</div>;
     }
 
+    // Safe stats object with defaults
+    const safeStats = {
+        totalMatches: careerStats.totalMatches || { overall: 0, test: 0, odi: 0, t20: 0, firstClass: 0 },
+        totalRuns: careerStats.totalRuns || 0,
+        totalWickets: careerStats.totalWickets || 0,
+        battingAverage: careerStats.battingAverage || 0,
+        bowlingAverage: careerStats.bowlingAverage || 0,
+        battingStrikeRate: careerStats.battingStrikeRate || 0,
+        bowlingStrikeRate: careerStats.bowlingStrikeRate || 0,
+        centuries: careerStats.centuries || 0,
+        halfCenturies: careerStats.halfCenturies || 0,
+        thirties: careerStats.thirties || 0,
+        bestBowlingFigures: careerStats.bestBowlingFigures || 'N/A',
+        fiveWicketHauls: careerStats.fiveWicketHauls || 0,
+        tenWicketHauls: careerStats.tenWicketHauls || 0,
+        totalCatches: careerStats.totalCatches || 0,
+        totalStumpings: careerStats.totalStumpings || 0,
+        totalRunOuts: careerStats.totalRunOuts || 0,
+        notOuts: careerStats.notOuts || 0,
+        highestScore: careerStats.highestScore || 0,
+        careerSpan: careerStats.careerSpan || { startYear: 0, endYear: 0, duration: 0 },
+        formatStats: careerStats.formatStats || [],
+        yearlyStats: careerStats.yearlyStats || []
+    };
+
     // Chart configurations
     const formatComparisonChart = {
-        labels: careerStats.formatStats.map(f => f.format),
+        labels: safeStats.formatStats.map(f => f.format),
         datasets: [
             {
                 label: 'Runs',
-                data: careerStats.formatStats.map(f => f.runs),
+                data: safeStats.formatStats.map(f => f.runs),
                 backgroundColor: 'rgba(59, 130, 246, 0.8)',
                 yAxisID: 'y',
             },
             {
                 label: 'Wickets',
-                data: careerStats.formatStats.map(f => f.wickets),
+                data: safeStats.formatStats.map(f => f.wickets),
                 backgroundColor: 'rgba(16, 185, 129, 0.8)',
                 yAxisID: 'y1',
             }
@@ -132,18 +157,18 @@ export default function CareerOverview() {
     };
 
     const careerProgressionChart = {
-        labels: careerStats.yearlyStats?.map((y: any) => y.year.toString()) || [],
+        labels: safeStats.yearlyStats?.map((y: any) => y.year.toString()) || [],
         datasets: [
             {
                 label: 'Runs per Year',
-                data: careerStats.yearlyStats?.map((y: any) => y.runs) || [],
+                data: safeStats.yearlyStats?.map((y: any) => y.runs) || [],
                 borderColor: 'rgba(59, 130, 246, 1)',
                 backgroundColor: 'rgba(59, 130, 246, 0.2)',
                 tension: 0.1
             },
             {
                 label: 'Wickets per Year',
-                data: careerStats.yearlyStats?.map((y: any) => y.wickets) || [],
+                data: safeStats.yearlyStats?.map((y: any) => y.wickets) || [],
                 borderColor: 'rgba(16, 185, 129, 1)',
                 backgroundColor: 'rgba(16, 185, 129, 0.2)',
                 tension: 0.1,
@@ -156,9 +181,9 @@ export default function CareerOverview() {
         labels: ['Batting', 'Bowling', 'Fielding'],
         datasets: [{
             data: [
-                careerStats.totalRuns / 100, // Scale for visibility
-                careerStats.totalWickets * 10, // Scale for visibility
-                (careerStats.totalCatches + careerStats.totalStumpings + careerStats.totalRunOuts) * 5
+                safeStats.totalRuns / 100, // Scale for visibility
+                safeStats.totalWickets * 10, // Scale for visibility
+                (safeStats.totalCatches + safeStats.totalStumpings + safeStats.totalRunOuts) * 5
             ],
             backgroundColor: [
                 'rgba(59, 130, 246, 0.8)',
@@ -173,11 +198,11 @@ export default function CareerOverview() {
         datasets: [{
             label: 'Milestones',
             data: [
-                careerStats.centuries,
-                careerStats.halfCenturies,
-                careerStats.thirties,
-                careerStats.fiveWicketHauls,
-                careerStats.tenWicketHauls
+                safeStats.centuries,
+                safeStats.halfCenturies,
+                safeStats.thirties,
+                safeStats.fiveWicketHauls,
+                safeStats.tenWicketHauls
             ],
             backgroundColor: [
                 'rgba(59, 130, 246, 0.8)',
@@ -198,9 +223,9 @@ export default function CareerOverview() {
                         <CardTitle className="text-sm font-medium">Total Matches</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{careerStats.totalMatches.overall}</div>
+                        <div className="text-2xl font-bold">{safeStats.totalMatches.overall}</div>
                         <p className="text-xs text-muted-foreground">
-                            {careerStats.careerSpan.startYear} - {careerStats.careerSpan.endYear || 'Present'}
+                            {safeStats.careerSpan.startYear} - {safeStats.careerSpan.endYear || 'Present'}
                         </p>
                     </CardContent>
                 </Card>
@@ -210,9 +235,9 @@ export default function CareerOverview() {
                         <CardTitle className="text-sm font-medium">Total Runs</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{careerStats.totalRuns.toLocaleString()}</div>
+                        <div className="text-2xl font-bold">{safeStats.totalRuns.toLocaleString()}</div>
                         <p className="text-xs text-muted-foreground">
-                            Avg: {careerStats.battingAverage.toFixed(2)}
+                            Avg: {safeStats.battingAverage.toFixed(2)}
                         </p>
                     </CardContent>
                 </Card>
@@ -222,9 +247,9 @@ export default function CareerOverview() {
                         <CardTitle className="text-sm font-medium">Total Wickets</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{careerStats.totalWickets}</div>
+                        <div className="text-2xl font-bold">{safeStats.totalWickets}</div>
                         <p className="text-xs text-muted-foreground">
-                            Avg: {careerStats.bowlingAverage.toFixed(2)}
+                            Avg: {safeStats.bowlingAverage.toFixed(2)}
                         </p>
                     </CardContent>
                 </Card>
@@ -235,7 +260,7 @@ export default function CareerOverview() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-lg font-bold">
-                            {careerStats.battingStrikeRate.toFixed(1)} / {careerStats.bowlingStrikeRate.toFixed(1)}
+                            {safeStats.battingStrikeRate.toFixed(1)} / {safeStats.bowlingStrikeRate.toFixed(1)}
                         </div>
                         <p className="text-xs text-muted-foreground">Bat / Bowl</p>
                     </CardContent>
@@ -252,15 +277,15 @@ export default function CareerOverview() {
                         <div className="space-y-2">
                             <div className="flex justify-between">
                                 <span>100s:</span>
-                                <span className="font-bold">{careerStats.centuries}</span>
+                                <span className="font-bold">{safeStats.centuries}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span>50s:</span>
-                                <span className="font-bold">{careerStats.halfCenturies}</span>
+                                <span className="font-bold">{safeStats.halfCenturies}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span>30s:</span>
-                                <span className="font-bold">{careerStats.thirties}</span>
+                                <span className="font-bold">{safeStats.thirties}</span>
                             </div>
                         </div>
                     </CardContent>
@@ -274,15 +299,15 @@ export default function CareerOverview() {
                         <div className="space-y-2">
                             <div className="flex justify-between">
                                 <span>5W Hauls:</span>
-                                <span className="font-bold">{careerStats.fiveWicketHauls}</span>
+                                <span className="font-bold">{safeStats.fiveWicketHauls}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span>10W Hauls:</span>
-                                <span className="font-bold">{careerStats.tenWicketHauls}</span>
+                                <span className="font-bold">{safeStats.tenWicketHauls}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span>Best Figures:</span>
-                                <span className="font-bold">{careerStats.bestBowlingFigures || 'N/A'}</span>
+                                <span className="font-bold">{safeStats.bestBowlingFigures || 'N/A'}</span>
                             </div>
                         </div>
                     </CardContent>
@@ -296,15 +321,15 @@ export default function CareerOverview() {
                         <div className="space-y-2">
                             <div className="flex justify-between">
                                 <span>Catches:</span>
-                                <span className="font-bold">{careerStats.totalCatches}</span>
+                                <span className="font-bold">{safeStats.totalCatches}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span>Stumpings:</span>
-                                <span className="font-bold">{careerStats.totalStumpings}</span>
+                                <span className="font-bold">{safeStats.totalStumpings}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span>Run Outs:</span>
-                                <span className="font-bold">{careerStats.totalRunOuts}</span>
+                                <span className="font-bold">{safeStats.totalRunOuts}</span>
                             </div>
                         </div>
                     </CardContent>
@@ -331,7 +356,7 @@ export default function CareerOverview() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {careerStats.formatStats.map((format, index) => (
+                                {safeStats.formatStats.map((format, index) => (
                                     <tr key={index} className="border-b">
                                         <td className="p-2 font-medium">{format.format}</td>
                                         <td className="text-right p-2">{format.matches}</td>
@@ -358,15 +383,15 @@ export default function CareerOverview() {
                         <div className="space-y-3">
                             <div className="flex justify-between">
                                 <span>Highest Score:</span>
-                                <span className="font-bold">{careerStats.highestScore}</span>
+                                <span className="font-bold">{safeStats.highestScore}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span>Not Outs:</span>
-                                <span className="font-bold">{careerStats.notOuts}</span>
+                                <span className="font-bold">{safeStats.notOuts}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span>Career Span:</span>
-                                <span className="font-bold">{careerStats.careerSpan.duration} years</span>
+                                <span className="font-bold">{safeStats.careerSpan.duration} years</span>
                             </div>
                         </div>
                     </CardContent>
@@ -380,19 +405,19 @@ export default function CareerOverview() {
                         <div className="space-y-2">
                             <div className="flex justify-between">
                                 <span>Test:</span>
-                                <span className="font-bold">{careerStats.totalMatches.test}</span>
+                                <span className="font-bold">{safeStats.totalMatches.test}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span>ODI:</span>
-                                <span className="font-bold">{careerStats.totalMatches.odi}</span>
+                                <span className="font-bold">{safeStats.totalMatches.odi}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span>T20:</span>
-                                <span className="font-bold">{careerStats.totalMatches.t20}</span>
+                                <span className="font-bold">{safeStats.totalMatches.t20}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span>First-class:</span>
-                                <span className="font-bold">{careerStats.totalMatches.firstClass}</span>
+                                <span className="font-bold">{safeStats.totalMatches.firstClass}</span>
                             </div>
                         </div>
                     </CardContent>

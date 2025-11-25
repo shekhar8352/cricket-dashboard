@@ -171,12 +171,36 @@ export default function BowlingAnalytics() {
     return <div className="text-center p-8">No bowling data available</div>;
   }
 
+  // Safe bowling data with defaults
+  const safeBowlingData = {
+    formatStats: bowlingData.formatStats || [],
+    positionStats: bowlingData.positionStats || {
+      opening: { matches: 0, overs: 0, wickets: 0, economy: 0, average: 0, strikeRate: 0 },
+      middle: { matches: 0, overs: 0, wickets: 0, economy: 0, average: 0, strikeRate: 0 },
+      death: { matches: 0, overs: 0, wickets: 0, economy: 0, average: 0, strikeRate: 0 }
+    },
+    phaseAnalysis: bowlingData.phaseAnalysis || {
+      powerplay: { overs: 0, runs: 0, wickets: 0, economy: 0, dotBallPercentage: 0 },
+      middleOvers: { overs: 0, runs: 0, wickets: 0, economy: 0, dotBallPercentage: 0 },
+      deathOvers: { overs: 0, runs: 0, wickets: 0, economy: 0, dotBallPercentage: 0 }
+    },
+    dismissalTypes: bowlingData.dismissalTypes || {
+      caught: 0, bowled: 0, lbw: 0, stumped: 0, hitWicket: 0
+    },
+    vsOpposition: bowlingData.vsOpposition || [],
+    homeAwayStats: bowlingData.homeAwayStats || {
+      home: { matches: 0, overs: 0, wickets: 0, runs: 0, average: 0, economy: 0, strikeRate: 0 },
+      away: { matches: 0, overs: 0, wickets: 0, runs: 0, average: 0, economy: 0, strikeRate: 0 }
+    },
+    wicketDistribution: bowlingData.wicketDistribution || []
+  };
+
   // Chart configurations
   const formatWicketsChart = {
-    labels: bowlingData.formatStats.map(f => f.format),
+    labels: safeBowlingData.formatStats.map(f => f.format),
     datasets: [{
       label: 'Wickets',
-      data: bowlingData.formatStats.map(f => f.wickets),
+      data: safeBowlingData.formatStats.map(f => f.wickets),
       backgroundColor: 'rgba(59, 130, 246, 0.8)',
       borderColor: 'rgba(59, 130, 246, 1)',
       borderWidth: 1
@@ -184,10 +208,10 @@ export default function BowlingAnalytics() {
   };
 
   const economyTrendChart = {
-    labels: bowlingData.formatStats.map(f => f.format),
+    labels: safeBowlingData.formatStats.map(f => f.format),
     datasets: [{
       label: 'Economy Rate',
-      data: bowlingData.formatStats.map(f => f.economy),
+      data: safeBowlingData.formatStats.map(f => f.economy),
       borderColor: 'rgba(16, 185, 129, 1)',
       backgroundColor: 'rgba(16, 185, 129, 0.2)',
       tension: 0.1
@@ -195,11 +219,11 @@ export default function BowlingAnalytics() {
   };
 
   const dismissalTypesChart = {
-    labels: Object.keys(bowlingData.dismissalTypes).map(key => 
+    labels: Object.keys(safeBowlingData.dismissalTypes).map(key =>
       key.charAt(0).toUpperCase() + key.slice(1)
     ),
     datasets: [{
-      data: Object.values(bowlingData.dismissalTypes),
+      data: Object.values(safeBowlingData.dismissalTypes),
       backgroundColor: [
         'rgba(59, 130, 246, 0.8)',
         'rgba(16, 185, 129, 0.8)',
@@ -216,9 +240,9 @@ export default function BowlingAnalytics() {
       {
         label: 'Powerplay',
         data: [
-          bowlingData.phaseAnalysis.powerplay.economy,
-          bowlingData.phaseAnalysis.powerplay.wickets,
-          bowlingData.phaseAnalysis.powerplay.dotBallPercentage
+          safeBowlingData.phaseAnalysis.powerplay.economy,
+          safeBowlingData.phaseAnalysis.powerplay.wickets,
+          safeBowlingData.phaseAnalysis.powerplay.dotBallPercentage
         ],
         borderColor: 'rgba(59, 130, 246, 1)',
         backgroundColor: 'rgba(59, 130, 246, 0.2)'
@@ -226,9 +250,9 @@ export default function BowlingAnalytics() {
       {
         label: 'Middle Overs',
         data: [
-          bowlingData.phaseAnalysis.middleOvers.economy,
-          bowlingData.phaseAnalysis.middleOvers.wickets,
-          bowlingData.phaseAnalysis.middleOvers.dotBallPercentage
+          safeBowlingData.phaseAnalysis.middleOvers.economy,
+          safeBowlingData.phaseAnalysis.middleOvers.wickets,
+          safeBowlingData.phaseAnalysis.middleOvers.dotBallPercentage
         ],
         borderColor: 'rgba(16, 185, 129, 1)',
         backgroundColor: 'rgba(16, 185, 129, 0.2)'
@@ -236,9 +260,9 @@ export default function BowlingAnalytics() {
       {
         label: 'Death Overs',
         data: [
-          bowlingData.phaseAnalysis.deathOvers.economy,
-          bowlingData.phaseAnalysis.deathOvers.wickets,
-          bowlingData.phaseAnalysis.deathOvers.dotBallPercentage
+          safeBowlingData.phaseAnalysis.deathOvers.economy,
+          safeBowlingData.phaseAnalysis.deathOvers.wickets,
+          safeBowlingData.phaseAnalysis.deathOvers.dotBallPercentage
         ],
         borderColor: 'rgba(245, 158, 11, 1)',
         backgroundColor: 'rgba(245, 158, 11, 0.2)'
@@ -282,19 +306,19 @@ export default function BowlingAnalytics() {
                     </tr>
                   </thead>
                   <tbody>
-                    {bowlingData.formatStats.map((format, index) => (
+                    {safeBowlingData.formatStats.map((format, index) => (
                       <tr key={index} className="border-b">
                         <td className="p-2 font-medium">{format.format}</td>
-                        <td className="text-right p-2">{format.matches}</td>
-                        <td className="text-right p-2">{format.innings}</td>
-                        <td className="text-right p-2">{format.overs.toFixed(1)}</td>
-                        <td className="text-right p-2">{format.wickets}</td>
-                        <td className="text-right p-2">{format.runs}</td>
-                        <td className="text-right p-2">{format.average.toFixed(2)}</td>
-                        <td className="text-right p-2">{format.economy.toFixed(2)}</td>
-                        <td className="text-right p-2">{format.strikeRate.toFixed(1)}</td>
-                        <td className="text-right p-2">{format.fiveWickets}</td>
-                        <td className="text-right p-2">{format.bestFigures}</td>
+                        <td className="text-right p-2">{format.matches || 0}</td>
+                        <td className="text-right p-2">{format.innings || 0}</td>
+                        <td className="text-right p-2">{(format.overs || 0).toFixed(1)}</td>
+                        <td className="text-right p-2">{format.wickets || 0}</td>
+                        <td className="text-right p-2">{format.runs || 0}</td>
+                        <td className="text-right p-2">{(format.average || 0).toFixed(2)}</td>
+                        <td className="text-right p-2">{(format.economy || 0).toFixed(2)}</td>
+                        <td className="text-right p-2">{(format.strikeRate || 0).toFixed(1)}</td>
+                        <td className="text-right p-2">{format.fiveWickets || 0}</td>
+                        <td className="text-right p-2">{format.bestFigures || 'N/A'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -314,19 +338,19 @@ export default function BowlingAnalytics() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Overs:</span>
-                    <span className="font-bold">{bowlingData.phaseAnalysis.powerplay.overs.toFixed(1)}</span>
+                    <span className="font-bold">{safeBowlingData.phaseAnalysis.powerplay.overs.toFixed(1)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Wickets:</span>
-                    <span className="font-bold">{bowlingData.phaseAnalysis.powerplay.wickets}</span>
+                    <span className="font-bold">{safeBowlingData.phaseAnalysis.powerplay.wickets}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Economy:</span>
-                    <span className="font-bold">{bowlingData.phaseAnalysis.powerplay.economy.toFixed(2)}</span>
+                    <span className="font-bold">{safeBowlingData.phaseAnalysis.powerplay.economy.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Dot Ball %:</span>
-                    <span className="font-bold">{bowlingData.phaseAnalysis.powerplay.dotBallPercentage.toFixed(1)}%</span>
+                    <span className="font-bold">{safeBowlingData.phaseAnalysis.powerplay.dotBallPercentage.toFixed(1)}%</span>
                   </div>
                 </div>
               </CardContent>
@@ -340,19 +364,19 @@ export default function BowlingAnalytics() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Overs:</span>
-                    <span className="font-bold">{bowlingData.phaseAnalysis.middleOvers.overs.toFixed(1)}</span>
+                    <span className="font-bold">{safeBowlingData.phaseAnalysis.middleOvers.overs.toFixed(1)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Wickets:</span>
-                    <span className="font-bold">{bowlingData.phaseAnalysis.middleOvers.wickets}</span>
+                    <span className="font-bold">{safeBowlingData.phaseAnalysis.middleOvers.wickets}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Economy:</span>
-                    <span className="font-bold">{bowlingData.phaseAnalysis.middleOvers.economy.toFixed(2)}</span>
+                    <span className="font-bold">{safeBowlingData.phaseAnalysis.middleOvers.economy.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Dot Ball %:</span>
-                    <span className="font-bold">{bowlingData.phaseAnalysis.middleOvers.dotBallPercentage.toFixed(1)}%</span>
+                    <span className="font-bold">{safeBowlingData.phaseAnalysis.middleOvers.dotBallPercentage.toFixed(1)}%</span>
                   </div>
                 </div>
               </CardContent>
@@ -366,19 +390,19 @@ export default function BowlingAnalytics() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Overs:</span>
-                    <span className="font-bold">{bowlingData.phaseAnalysis.deathOvers.overs.toFixed(1)}</span>
+                    <span className="font-bold">{safeBowlingData.phaseAnalysis.deathOvers.overs.toFixed(1)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Wickets:</span>
-                    <span className="font-bold">{bowlingData.phaseAnalysis.deathOvers.wickets}</span>
+                    <span className="font-bold">{safeBowlingData.phaseAnalysis.deathOvers.wickets}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Economy:</span>
-                    <span className="font-bold">{bowlingData.phaseAnalysis.deathOvers.economy.toFixed(2)}</span>
+                    <span className="font-bold">{safeBowlingData.phaseAnalysis.deathOvers.economy.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Dot Ball %:</span>
-                    <span className="font-bold">{bowlingData.phaseAnalysis.deathOvers.dotBallPercentage.toFixed(1)}%</span>
+                    <span className="font-bold">{safeBowlingData.phaseAnalysis.deathOvers.dotBallPercentage.toFixed(1)}%</span>
                   </div>
                 </div>
               </CardContent>
@@ -396,19 +420,19 @@ export default function BowlingAnalytics() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Matches:</span>
-                    <span className="font-bold">{bowlingData.positionStats.opening.matches}</span>
+                    <span className="font-bold">{safeBowlingData.positionStats.opening.matches}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Wickets:</span>
-                    <span className="font-bold">{bowlingData.positionStats.opening.wickets}</span>
+                    <span className="font-bold">{safeBowlingData.positionStats.opening.wickets}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Economy:</span>
-                    <span className="font-bold">{bowlingData.positionStats.opening.economy.toFixed(2)}</span>
+                    <span className="font-bold">{safeBowlingData.positionStats.opening.economy.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Average:</span>
-                    <span className="font-bold">{bowlingData.positionStats.opening.average.toFixed(2)}</span>
+                    <span className="font-bold">{safeBowlingData.positionStats.opening.average.toFixed(2)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -422,19 +446,19 @@ export default function BowlingAnalytics() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Matches:</span>
-                    <span className="font-bold">{bowlingData.positionStats.middle.matches}</span>
+                    <span className="font-bold">{safeBowlingData.positionStats.middle.matches}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Wickets:</span>
-                    <span className="font-bold">{bowlingData.positionStats.middle.wickets}</span>
+                    <span className="font-bold">{safeBowlingData.positionStats.middle.wickets}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Economy:</span>
-                    <span className="font-bold">{bowlingData.positionStats.middle.economy.toFixed(2)}</span>
+                    <span className="font-bold">{safeBowlingData.positionStats.middle.economy.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Average:</span>
-                    <span className="font-bold">{bowlingData.positionStats.middle.average.toFixed(2)}</span>
+                    <span className="font-bold">{safeBowlingData.positionStats.middle.average.toFixed(2)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -448,19 +472,19 @@ export default function BowlingAnalytics() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Matches:</span>
-                    <span className="font-bold">{bowlingData.positionStats.death.matches}</span>
+                    <span className="font-bold">{safeBowlingData.positionStats.death.matches}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Wickets:</span>
-                    <span className="font-bold">{bowlingData.positionStats.death.wickets}</span>
+                    <span className="font-bold">{safeBowlingData.positionStats.death.wickets}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Economy:</span>
-                    <span className="font-bold">{bowlingData.positionStats.death.economy.toFixed(2)}</span>
+                    <span className="font-bold">{safeBowlingData.positionStats.death.economy.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Average:</span>
-                    <span className="font-bold">{bowlingData.positionStats.death.average.toFixed(2)}</span>
+                    <span className="font-bold">{safeBowlingData.positionStats.death.average.toFixed(2)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -476,7 +500,7 @@ export default function BowlingAnalytics() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {Object.entries(bowlingData.dismissalTypes).map(([type, count]) => (
+                  {Object.entries(safeBowlingData.dismissalTypes).map(([type, count]) => (
                     <div key={type} className="flex justify-between">
                       <span className="capitalize">{type}</span>
                       <span className="font-bold">{count}</span>
@@ -497,15 +521,15 @@ export default function BowlingAnalytics() {
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span>Wickets:</span>
-                        <span>{bowlingData.homeAwayStats.home.wickets}</span>
+                        <span>{safeBowlingData.homeAwayStats.home.wickets}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Economy:</span>
-                        <span>{bowlingData.homeAwayStats.home.economy.toFixed(2)}</span>
+                        <span>{safeBowlingData.homeAwayStats.home.economy.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Average:</span>
-                        <span>{bowlingData.homeAwayStats.home.average.toFixed(2)}</span>
+                        <span>{safeBowlingData.homeAwayStats.home.average.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -514,15 +538,15 @@ export default function BowlingAnalytics() {
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span>Wickets:</span>
-                        <span>{bowlingData.homeAwayStats.away.wickets}</span>
+                        <span>{safeBowlingData.homeAwayStats.away.wickets}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Economy:</span>
-                        <span>{bowlingData.homeAwayStats.away.economy.toFixed(2)}</span>
+                        <span>{safeBowlingData.homeAwayStats.away.economy.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Average:</span>
-                        <span>{bowlingData.homeAwayStats.away.average.toFixed(2)}</span>
+                        <span>{safeBowlingData.homeAwayStats.away.average.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -553,16 +577,16 @@ export default function BowlingAnalytics() {
                     </tr>
                   </thead>
                   <tbody>
-                    {bowlingData.vsOpposition.map((opp, index) => (
+                    {safeBowlingData.vsOpposition.map((opp, index) => (
                       <tr key={index} className="border-b">
                         <td className="p-2 font-medium">{opp.opponent}</td>
-                        <td className="text-right p-2">{opp.matches}</td>
-                        <td className="text-right p-2">{opp.overs.toFixed(1)}</td>
-                        <td className="text-right p-2">{opp.wickets}</td>
-                        <td className="text-right p-2">{opp.runs}</td>
-                        <td className="text-right p-2">{opp.average.toFixed(2)}</td>
-                        <td className="text-right p-2">{opp.economy.toFixed(2)}</td>
-                        <td className="text-right p-2">{opp.bestFigures}</td>
+                        <td className="text-right p-2">{opp.matches || 0}</td>
+                        <td className="text-right p-2">{(opp.overs || 0).toFixed(1)}</td>
+                        <td className="text-right p-2">{opp.wickets || 0}</td>
+                        <td className="text-right p-2">{opp.runs || 0}</td>
+                        <td className="text-right p-2">{(opp.average || 0).toFixed(2)}</td>
+                        <td className="text-right p-2">{(opp.economy || 0).toFixed(2)}</td>
+                        <td className="text-right p-2">{opp.bestFigures || 'N/A'}</td>
                       </tr>
                     ))}
                   </tbody>
