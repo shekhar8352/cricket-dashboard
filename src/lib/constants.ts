@@ -25,6 +25,7 @@ export const MATCH_LEVELS = [
     "ranji",
     "under19",
     "list-a",
+    "club",
 ] as const;
 
 export type MatchLevel = (typeof MATCH_LEVELS)[number];
@@ -61,9 +62,9 @@ export const MATCH_RESULTS = [
 export type MatchResult = (typeof MATCH_RESULTS)[number];
 
 // Home/Away types
-export const HOME_AWAY_TYPES = ["home", "away", "neutral"] as const;
+export const VENUE_TYPES = ["home", "away", "neutral"] as const;
 
-export type HomeAwayType = (typeof HOME_AWAY_TYPES)[number];
+export type VenueType = (typeof VENUE_TYPES)[number];
 
 // Pitch types
 export const PITCH_TYPES = ["batting", "bowling", "balanced"] as const;
@@ -122,6 +123,7 @@ export const LEVEL_LABELS: Record<MatchLevel, string> = {
     ranji: "Ranji Trophy",
     under19: "Under-19",
     "list-a": "List A",
+    club: "Club Cricket",
 };
 
 // Display labels for dismissal types

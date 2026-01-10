@@ -1,6 +1,7 @@
 import { connectDB } from "@/database/mongoose";
 import Match, { IMatch } from "@/lib/models/Match";
 import Performance from "@/lib/models/Performance";
+import "@/lib/models/Series"; // Ensure Series model is registered
 import { MatchFormData, MatchListItem, MatchFilters } from "@/types";
 import mongoose from "mongoose";
 
@@ -17,7 +18,7 @@ export async function getAllMatches(
     if (filters?.format) query.format = filters.format;
     if (filters?.level) query.level = filters.level;
     if (filters?.opponent) query.opponent = { $regex: filters.opponent, $options: "i" };
-    if (filters?.series) query.series = new mongoose.Types.ObjectId(filters.series);
+    if (filters?.series) query.seriesId = new mongoose.Types.ObjectId(filters.series);
     if (filters?.result) query.result = filters.result;
     if (filters?.venue) query.venue = { $regex: filters.venue, $options: "i" };
 
@@ -60,7 +61,7 @@ export async function getAllMatches(
         country: m.country,
         opponent: m.opponent,
         teamRepresented: m.teamRepresented,
-        homeAway: m.homeAway,
+        venueType: m.venueType,
         result: m.result,
         resultMargin: m.resultMargin,
         hasPerformance: performanceMatchIds.has(m._id.toString()),
@@ -95,7 +96,7 @@ export async function getMatchById(id: string): Promise<MatchListItem | null> {
         country: match.country,
         opponent: match.opponent,
         teamRepresented: match.teamRepresented,
-        homeAway: match.homeAway,
+        venueType: match.venueType,
         result: match.result,
         resultMargin: match.resultMargin,
         hasPerformance: !!performance,
@@ -113,8 +114,8 @@ export async function createMatch(data: MatchFormData): Promise<MatchListItem> {
         date: new Date(data.date),
     };
 
-    if (data.series) {
-        matchData.series = new mongoose.Types.ObjectId(data.series);
+    if (data.seriesId) {
+        matchData.series = new mongoose.Types.ObjectId(data.seriesId);
     }
 
     const match = await Match.create(matchData);
@@ -139,7 +140,7 @@ export async function createMatch(data: MatchFormData): Promise<MatchListItem> {
         country: match.country,
         opponent: match.opponent,
         teamRepresented: match.teamRepresented,
-        homeAway: match.homeAway,
+        venueType: match.venueType,
         result: match.result,
         resultMargin: match.resultMargin,
         hasPerformance: false,
@@ -157,7 +158,7 @@ export async function updateMatch(
 
     const updateData: Record<string, unknown> = { ...data };
     if (data.date) updateData.date = new Date(data.date);
-    if (data.series) updateData.series = new mongoose.Types.ObjectId(data.series);
+    if (data.seriesId) updateData.series = new mongoose.Types.ObjectId(data.seriesId);
 
     const match = await Match.findByIdAndUpdate(id, updateData, { new: true })
         .populate("series", "name")
@@ -181,7 +182,7 @@ export async function updateMatch(
         country: match.country,
         opponent: match.opponent,
         teamRepresented: match.teamRepresented,
-        homeAway: match.homeAway,
+        venueType: match.venueType,
         result: match.result,
         resultMargin: match.resultMargin,
         hasPerformance: !!performance,

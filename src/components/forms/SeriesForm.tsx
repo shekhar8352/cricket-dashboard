@@ -9,6 +9,17 @@ import {
     SERIES_STATUSES,
 } from "@/lib/constants";
 import { formatDateForInput } from "@/lib/utils";
+import {
+    Trophy,
+    Calendar,
+    Globe,
+    Users,
+    Activity,
+    Save,
+    ChevronRight,
+    Layers
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface SeriesFormProps {
     initialData?: Partial<SeriesFormData>;
@@ -41,184 +52,191 @@ export function SeriesForm({ initialData, onSubmit, isLoading }: SeriesFormProps
     });
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Series Name */}
-            <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Series Name *
-                </label>
-                <input
-                    type="text"
-                    {...register("name", { required: "Series name is required" })}
-                    placeholder="e.g., India vs Australia 2024"
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                {errors.name && (
-                    <p className="mt-1 text-sm text-red-400">{errors.name.message}</p>
-                )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Basic Info Section */}
+                <div className="space-y-6">
+                    <div className="flex items-center gap-2 pb-2 border-b border-white/5">
+                        <Trophy size={16} className="text-amber-400" />
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">Series Identity</h3>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-300">Series/Tournament Name</label>
+                            <input
+                                {...register("name", { required: "Series name is required" })}
+                                placeholder="e.g. Border-Gavaskar Trophy"
+                                className={cn(
+                                    "w-full px-4 py-3 bg-white/5 border rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50",
+                                    errors.name ? "border-red-500/50" : "border-white/10"
+                                )}
+                            />
+                            {errors.name && (
+                                <p className="text-xs text-red-400 font-medium">{errors.name.message}</p>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-300">Series Type</label>
+                                <select
+                                    {...register("type", { required: true })}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer"
+                                >
+                                    {SERIES_TYPES.map((type) => (
+                                        <option key={type} value={type} className="bg-gray-900">
+                                            {type.charAt(0).toUpperCase() + type.slice(1).replace("-", " ")}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-300">Primary Format</label>
+                                <select
+                                    {...register("format", { required: true })}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer"
+                                >
+                                    {SERIES_FORMATS.map((format) => (
+                                        <option key={format} value={format} className="bg-gray-900">{format}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-300">Level</label>
+                                <select
+                                    {...register("level", { required: true })}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer"
+                                >
+                                    {MATCH_LEVELS.map((level) => (
+                                        <option key={level} value={level} className="bg-gray-900">
+                                            {level.charAt(0).toUpperCase() + level.slice(1).replace("-", " ")}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-300">Current Status</label>
+                                <select
+                                    {...register("status")}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer"
+                                >
+                                    {SERIES_STATUSES.map((status) => (
+                                        <option key={status} value={status} className="bg-gray-900">
+                                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Schedule & Context Section */}
+                <div className="space-y-6">
+                    <div className="flex items-center gap-2 pb-2 border-b border-white/5">
+                        <Calendar size={16} className="text-emerald-400" />
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">Schedule & Context</h3>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-300">Start Date</label>
+                                <input
+                                    type="date"
+                                    {...register("startDate", { required: "Start date is required" })}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-300">End Date</label>
+                                <input
+                                    type="date"
+                                    {...register("endDate")}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                <Globe size={14} className="text-blue-400" /> Host Country/Region
+                            </label>
+                            <input
+                                {...register("hostCountry", { required: "Host country is required" })}
+                                placeholder="e.g. Australia"
+                                className={cn(
+                                    "w-full px-4 py-3 bg-white/5 border rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50",
+                                    errors.hostCountry ? "border-red-500/50" : "border-white/10"
+                                )}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                    <Users size={14} className="text-indigo-400" /> Teams
+                                </label>
+                                <input
+                                    {...register("teams", {
+                                        required: "Teams are required",
+                                        setValueAs: (v) => (typeof v === "string" ? v.split(",").map((t) => t.trim()) : v),
+                                    })}
+                                    placeholder="Team A, Team B..."
+                                    className={cn(
+                                        "w-full px-4 py-3 bg-white/5 border rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50",
+                                        errors.teams ? "border-red-500/50" : "border-white/10"
+                                    )}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                    <Layers size={14} className="text-pink-400" /> Matches
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    {...register("totalMatches", {
+                                        required: "Total matches required",
+                                        valueAsNumber: true,
+                                        min: { value: 1, message: "Min 1" },
+                                    })}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* Type & Format */}
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Series Type *
-                    </label>
-                    <select
-                        {...register("type", { required: true })}
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        {SERIES_TYPES.map((type) => (
-                            <option key={type} value={type}>
-                                {type.charAt(0).toUpperCase() + type.slice(1).replace("-", " ")}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Format *
-                    </label>
-                    <select
-                        {...register("format", { required: true })}
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        {SERIES_FORMATS.map((format) => (
-                            <option key={format} value={format}>
-                                {format}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-            </div>
-
-            {/* Level & Status */}
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Level *
-                    </label>
-                    <select
-                        {...register("level", { required: true })}
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        {MATCH_LEVELS.map((level) => (
-                            <option key={level} value={level}>
-                                {level.charAt(0).toUpperCase() + level.slice(1).replace("-", " ")}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Status
-                    </label>
-                    <select
-                        {...register("status")}
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        {SERIES_STATUSES.map((status) => (
-                            <option key={status} value={status}>
-                                {status.charAt(0).toUpperCase() + status.slice(1)}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-            </div>
-
-            {/* Dates */}
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Start Date *
-                    </label>
-                    <input
-                        type="date"
-                        {...register("startDate", { required: "Start date is required" })}
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {errors.startDate && (
-                        <p className="mt-1 text-sm text-red-400">{errors.startDate.message}</p>
+            <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p className="text-xs text-gray-500 font-medium italic">
+                    * You can add individual matches to this series after creation.
+                </p>
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                >
+                    {isLoading ? (
+                        <div className="animate-spin w-5 h-5 border-2 border-white/20 border-t-white rounded-full" />
+                    ) : (
+                        <>
+                            <Save size={18} />
+                            {initialData ? "Update Series" : "Create Series"}
+                            <ChevronRight size={18} />
+                        </>
                     )}
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        End Date
-                    </label>
-                    <input
-                        type="date"
-                        {...register("endDate")}
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                </div>
+                </button>
             </div>
-
-            {/* Host Country */}
-            <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Host Country *
-                </label>
-                <input
-                    type="text"
-                    {...register("hostCountry", { required: "Host country is required" })}
-                    placeholder="e.g., India"
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {errors.hostCountry && (
-                    <p className="mt-1 text-sm text-red-400">{errors.hostCountry.message}</p>
-                )}
-            </div>
-
-            {/* Teams (comma-separated) */}
-            <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Teams (comma-separated) *
-                </label>
-                <input
-                    type="text"
-                    {...register("teams", {
-                        required: "Teams are required",
-                        setValueAs: (v) => (typeof v === "string" ? v.split(",").map((t) => t.trim()) : v),
-                    })}
-                    placeholder="e.g., India, Australia"
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {errors.teams && (
-                    <p className="mt-1 text-sm text-red-400">{errors.teams.message}</p>
-                )}
-            </div>
-
-            {/* Total Matches */}
-            <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Total Matches *
-                </label>
-                <input
-                    type="number"
-                    min="1"
-                    {...register("totalMatches", {
-                        required: "Total matches is required",
-                        valueAsNumber: true,
-                        min: { value: 1, message: "Minimum 1 match required" },
-                    })}
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {errors.totalMatches && (
-                    <p className="mt-1 text-sm text-red-400">{errors.totalMatches.message}</p>
-                )}
-            </div>
-
-            {/* Submit */}
-            <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
-            >
-                {isLoading ? "Saving..." : initialData ? "Update Series" : "Create Series"}
-            </button>
         </form>
     );
 }

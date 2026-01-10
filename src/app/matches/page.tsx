@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { getAllMatches } from "@/lib/services/match.service";
-import { formatDate, formatBattingScore } from "@/lib/utils";
-import { getPerformanceByMatchId } from "@/lib/services/performance.service";
+import { formatDate } from "@/lib/utils";
 
 export default async function MatchesPage() {
     const matches = await getAllMatches();
@@ -73,12 +72,12 @@ export default async function MatchesPage() {
                                                 {match.result ? (
                                                     <span
                                                         className={`px-2 py-1 text-xs font-medium rounded ${match.result === "won"
-                                                                ? "bg-green-900/50 text-green-400"
-                                                                : match.result === "lost"
-                                                                    ? "bg-red-900/50 text-red-400"
-                                                                    : match.result === "draw"
-                                                                        ? "bg-yellow-900/50 text-yellow-400"
-                                                                        : "bg-gray-700 text-gray-300"
+                                                            ? "bg-green-900/50 text-green-400"
+                                                            : match.result === "lost"
+                                                                ? "bg-red-900/50 text-red-400"
+                                                                : match.result === "draw"
+                                                                    ? "bg-yellow-900/50 text-yellow-400"
+                                                                    : "bg-gray-700 text-gray-300"
                                                             }`}
                                                     >
                                                         {match.result.toUpperCase()}

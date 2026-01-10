@@ -3,14 +3,14 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IMatch extends Document {
     series?: mongoose.Types.ObjectId;
     format: "Test" | "ODI" | "T20" | "First-class" | "List-A" | "T20-domestic";
-    level: "international" | "ipl" | "domestic" | "ranji" | "under19" | "list-a";
+    level: "international" | "ipl" | "domestic" | "ranji" | "under19" | "list-a" | "club";
     date: Date;
     venue: string;
     city: string;
-    country: string;
+    country?: string;
     opponent: string;
-    teamRepresented: string;
-    homeAway?: "home" | "away" | "neutral";
+    teamRepresented?: string;
+    venueType?: "home" | "away" | "neutral";
     result?: "won" | "lost" | "draw" | "tie" | "no_result";
     resultMargin?: string;
     pitchType?: "batting" | "bowling" | "balanced";
@@ -31,16 +31,16 @@ const MatchSchema = new Schema<IMatch>(
         },
         level: {
             type: String,
-            enum: ["international", "ipl", "domestic", "ranji", "under19", "list-a"],
+            enum: ["international", "ipl", "domestic", "ranji", "under19", "list-a", "club"],
             required: true,
         },
         date: { type: Date, required: true },
         venue: { type: String, required: true },
         city: { type: String, required: true },
-        country: { type: String, required: true },
+        country: { type: String },
         opponent: { type: String, required: true },
-        teamRepresented: { type: String, required: true },
-        homeAway: {
+        teamRepresented: { type: String },
+        venueType: {
             type: String,
             enum: ["home", "away", "neutral"],
         },

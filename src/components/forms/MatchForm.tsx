@@ -1,28 +1,47 @@
 "use client";
 
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { MatchFormData, SeriesListItem } from "@/types";
 import {
     MATCH_FORMATS,
     MATCH_LEVELS,
-    MATCH_RESULTS,
-    HOME_AWAY_TYPES,
-    PITCH_TYPES,
-    TOSS_DECISIONS,
-    MATCH_TYPE_OPTIONS,
+    VENUE_TYPES,
+    MATCH_RESULTS
 } from "@/lib/constants";
-import { formatDateForInput } from "@/lib/utils";
+import {
+    Calendar,
+    Users,
+    MapPin,
+    Trophy,
+    Save,
+    ChevronRight
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const matchSchema = z.object({
+    opponent: z.string().min(1, "Opponent name is required"),
+    date: z.string().min(1, "Date is required"),
+    format: z.enum(MATCH_FORMATS),
+    level: z.enum(MATCH_LEVELS),
+    venue: z.string().min(1, "Venue is required"),
+    city: z.string().min(1, "City is required"),
+    venueType: z.enum(VENUE_TYPES).optional(),
+    seriesId: z.string().optional(),
+    result: z.enum(MATCH_RESULTS).optional(),
+});
 
 interface MatchFormProps {
     initialData?: Partial<MatchFormData>;
-    seriesList?: SeriesListItem[];
-    onSubmit: (data: MatchFormData) => Promise<void>;
+    seriesList: SeriesListItem[];
+    onSubmit: (data: MatchFormData) => void;
     isLoading?: boolean;
 }
 
 export function MatchForm({
     initialData,
-    seriesList = [],
+    seriesList,
     onSubmit,
     isLoading,
 }: MatchFormProps) {
@@ -31,308 +50,174 @@ export function MatchForm({
         handleSubmit,
         formState: { errors },
     } = useForm<MatchFormData>({
+        resolver: zodResolver(matchSchema) as any,
         defaultValues: {
-            series: initialData?.series || "",
+            ...initialData,
+            date: initialData?.date
+                ? new Date(initialData.date).toISOString().split("T")[0]
+                : new Date().toISOString().split("T")[0],
             format: initialData?.format || "T20",
-            level: initialData?.level || "international",
-            date: initialData?.date ? formatDateForInput(initialData.date) : "",
-            venue: initialData?.venue || "",
-            city: initialData?.city || "",
-            country: initialData?.country || "",
-            opponent: initialData?.opponent || "",
-            teamRepresented: initialData?.teamRepresented || "",
-            homeAway: initialData?.homeAway || undefined,
-            result: initialData?.result || undefined,
-            resultMargin: initialData?.resultMargin || "",
-            pitchType: initialData?.pitchType || undefined,
-            tossWinner: initialData?.tossWinner || "",
-            tossDecision: initialData?.tossDecision || undefined,
-            matchType: initialData?.matchType || undefined,
+            level: initialData?.level || "club",
+            venueType: initialData?.venueType || "home",
         },
     });
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Series Selection */}
-            {seriesList.length > 0 && (
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Series (Optional)
-                    </label>
-                    <select
-                        {...register("series")}
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="">No Series</option>
-                        {seriesList.map((series) => (
-                            <option key={series._id} value={series._id}>
-                                {series.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-            )}
+        <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Basic Info Section */}
+                <div className="space-y-6">
+                    <div className="flex items-center gap-2 pb-2 border-b border-white/5">
+                        <Users size={16} className="text-blue-400" />
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">Match Details</h3>
+                    </div>
 
-            {/* Format & Level */}
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Format *
-                    </label>
-                    <select
-                        {...register("format", { required: true })}
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        {MATCH_FORMATS.map((format) => (
-                            <option key={format} value={format}>
-                                {format}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-300">Opponent Team</label>
+                            <input
+                                {...register("opponent")}
+                                placeholder="e.g. Mumbai Indians"
+                                className={cn(
+                                    "w-full px-4 py-3 bg-white/5 border rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50",
+                                    errors.opponent ? "border-red-500/50" : "border-white/10"
+                                )}
+                            />
+                            {errors.opponent && (
+                                <p className="text-xs text-red-400 font-medium">{errors.opponent.message}</p>
+                            )}
+                        </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Level *
-                    </label>
-                    <select
-                        {...register("level", { required: true })}
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        {MATCH_LEVELS.map((level) => (
-                            <option key={level} value={level}>
-                                {level.charAt(0).toUpperCase() + level.slice(1)}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-            </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-300">Match Date</label>
+                                <div className="relative">
+                                    <input
+                                        type="date"
+                                        {...register("date")}
+                                        className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                    />
+                                    <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                </div>
+                            </div>
 
-            {/* Date */}
-            <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Match Date *
-                </label>
-                <input
-                    type="date"
-                    {...register("date", { required: "Match date is required" })}
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {errors.date && (
-                    <p className="mt-1 text-sm text-red-400">{errors.date.message}</p>
-                )}
-            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-300">Format</label>
+                                <select
+                                    {...register("format")}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer"
+                                >
+                                    {MATCH_FORMATS.map((f) => (
+                                        <option key={f} value={f} className="bg-gray-900">{f}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
 
-            {/* Venue Details */}
-            <div className="grid grid-cols-3 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Venue *
-                    </label>
-                    <input
-                        type="text"
-                        {...register("venue", { required: "Venue is required" })}
-                        placeholder="e.g., Wankhede Stadium"
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {errors.venue && (
-                        <p className="mt-1 text-sm text-red-400">{errors.venue.message}</p>
-                    )}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-300">Match Level</label>
+                                <select
+                                    {...register("level")}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer"
+                                >
+                                    {MATCH_LEVELS.map((l) => (
+                                        <option key={l} value={l} className="bg-gray-900">
+                                            {l.charAt(0).toUpperCase() + l.slice(1)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-300">Venue Type</label>
+                                <select
+                                    {...register("venueType")}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer"
+                                >
+                                    {VENUE_TYPES.map((v) => (
+                                        <option key={v} value={v} className="bg-gray-900">
+                                            {v.charAt(0).toUpperCase() + v.slice(1)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        City *
-                    </label>
-                    <input
-                        type="text"
-                        {...register("city", { required: "City is required" })}
-                        placeholder="e.g., Mumbai"
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {errors.city && (
-                        <p className="mt-1 text-sm text-red-400">{errors.city.message}</p>
-                    )}
-                </div>
+                {/* Location & Context Section */}
+                <div className="space-y-6">
+                    <div className="flex items-center gap-2 pb-2 border-b border-white/5">
+                        <MapPin size={16} className="text-emerald-400" />
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">Venue & Context</h3>
+                    </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Country *
-                    </label>
-                    <input
-                        type="text"
-                        {...register("country", { required: "Country is required" })}
-                        placeholder="e.g., India"
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {errors.country && (
-                        <p className="mt-1 text-sm text-red-400">{errors.country.message}</p>
-                    )}
-                </div>
-            </div>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-300">Ground/Stadium Name</label>
+                            <input
+                                {...register("venue")}
+                                placeholder="e.g. Wankhede Stadium"
+                                className={cn(
+                                    "w-full px-4 py-3 bg-white/5 border rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50",
+                                    errors.venue ? "border-red-500/50" : "border-white/10"
+                                )}
+                            />
+                        </div>
 
-            {/* Teams */}
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Opponent *
-                    </label>
-                    <input
-                        type="text"
-                        {...register("opponent", { required: "Opponent is required" })}
-                        placeholder="e.g., Australia"
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {errors.opponent && (
-                        <p className="mt-1 text-sm text-red-400">{errors.opponent.message}</p>
-                    )}
-                </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-300">City</label>
+                            <input
+                                {...register("city")}
+                                placeholder="e.g. Mumbai"
+                                className={cn(
+                                    "w-full px-4 py-3 bg-white/5 border rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50",
+                                    errors.city ? "border-red-500/50" : "border-white/10"
+                                )}
+                            />
+                        </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Team Represented *
-                    </label>
-                    <input
-                        type="text"
-                        {...register("teamRepresented", { required: "Team is required" })}
-                        placeholder="e.g., India"
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {errors.teamRepresented && (
-                        <p className="mt-1 text-sm text-red-400">
-                            {errors.teamRepresented.message}
-                        </p>
-                    )}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                <Trophy size={14} className="text-amber-400" /> Part of Series
+                            </label>
+                            <select
+                                {...register("seriesId")}
+                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer"
+                            >
+                                <option value="" className="bg-gray-900">Independent Match</option>
+                                {seriesList.map((s) => (
+                                    <option key={s._id} value={s._id} className="bg-gray-900">
+                                        {s.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Home/Away & Pitch */}
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Home/Away
-                    </label>
-                    <select
-                        {...register("homeAway")}
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="">Select...</option>
-                        {HOME_AWAY_TYPES.map((type) => (
-                            <option key={type} value={type}>
-                                {type.charAt(0).toUpperCase() + type.slice(1)}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Pitch Type
-                    </label>
-                    <select
-                        {...register("pitchType")}
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="">Select...</option>
-                        {PITCH_TYPES.map((type) => (
-                            <option key={type} value={type}>
-                                {type.charAt(0).toUpperCase() + type.slice(1)}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-            </div>
-
-            {/* Toss */}
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Toss Winner
-                    </label>
-                    <input
-                        type="text"
-                        {...register("tossWinner")}
-                        placeholder="Team name"
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Toss Decision
-                    </label>
-                    <select
-                        {...register("tossDecision")}
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="">Select...</option>
-                        {TOSS_DECISIONS.map((decision) => (
-                            <option key={decision} value={decision}>
-                                {decision.charAt(0).toUpperCase() + decision.slice(1)}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-            </div>
-
-            {/* Result */}
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Result
-                    </label>
-                    <select
-                        {...register("result")}
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="">Select...</option>
-                        {MATCH_RESULTS.map((result) => (
-                            <option key={result} value={result}>
-                                {result.charAt(0).toUpperCase() + result.slice(1).replace("_", " ")}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Result Margin
-                    </label>
-                    <input
-                        type="text"
-                        {...register("resultMargin")}
-                        placeholder="e.g., 5 wickets, 23 runs"
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                </div>
-            </div>
-
-            {/* Match Type */}
-            <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Match Type
-                </label>
-                <select
-                    {...register("matchType")}
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p className="text-xs text-gray-500 font-medium italic">
+                    * You will be able to add detailed performance data in the next step.
+                </p>
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)]"
                 >
-                    <option value="">Select...</option>
-                    {MATCH_TYPE_OPTIONS.map((type) => (
-                        <option key={type} value={type}>
-                            {type.charAt(0).toUpperCase() + type.slice(1)}
-                        </option>
-                    ))}
-                </select>
+                    {isLoading ? (
+                        <div className="animate-spin w-5 h-5 border-2 border-white/20 border-t-white rounded-full" />
+                    ) : (
+                        <>
+                            <Save size={18} />
+                            Create & Continue
+                            <ChevronRight size={18} />
+                        </>
+                    )}
+                </button>
             </div>
-
-            {/* Submit */}
-            <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
-            >
-                {isLoading ? "Saving..." : initialData ? "Update Match" : "Create Match"}
-            </button>
         </form>
     );
 }

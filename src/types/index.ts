@@ -2,7 +2,7 @@ import {
     MatchFormat,
     MatchLevel,
     MatchResult,
-    HomeAwayType,
+    VenueType,
     PitchType,
     MatchTypeOption,
     DismissalType,
@@ -73,16 +73,16 @@ export interface SeriesListItem {
 // ============================================
 
 export interface MatchFormData {
-    series?: string;
+    seriesId?: string;
     format: MatchFormat;
     level: MatchLevel;
     date: string;
     venue: string;
     city: string;
-    country: string;
+    country?: string;
     opponent: string;
-    teamRepresented: string;
-    homeAway?: HomeAwayType;
+    teamRepresented?: string;
+    venueType?: VenueType;
     result?: MatchResult;
     resultMargin?: string;
     pitchType?: PitchType;
@@ -93,16 +93,17 @@ export interface MatchFormData {
 
 export interface MatchListItem {
     _id: string;
+    seriesId?: string;
     series?: { _id: string; name: string };
     format: MatchFormat;
     level: MatchLevel;
     date: string;
     venue: string;
     city: string;
-    country: string;
+    country?: string;
     opponent: string;
-    teamRepresented: string;
-    homeAway?: HomeAwayType;
+    teamRepresented?: string;
+    venueType?: VenueType;
     result?: MatchResult;
     resultMargin?: string;
     hasPerformance?: boolean;
@@ -259,7 +260,7 @@ export interface AnalyticsFilters {
     startDate?: string;
     endDate?: string;
     venue?: string;
-    homeAway?: HomeAwayType;
+    venueType?: VenueType;
 }
 
 // ============================================
