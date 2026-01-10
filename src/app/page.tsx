@@ -1,103 +1,184 @@
-import Image from "next/image";
+import { Suspense } from "react";
+import { StatCard, Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import {
+  RunsOverTimeChart,
+  FormatBreakdownChart,
+  RecentFormChart,
+} from "@/components/charts";
+import { getCareerSummary, getFormatBreakdown, getTrendData } from "@/lib/services/analytics.service";
+import { PLAYER } from "@/lib/constants";
+import { formatBattingScore, formatBowlingFigures } from "@/lib/utils";
+import Link from "next/link";
 
-export default function Home() {
+async function DashboardContent() {
+  const [summary, formats, trends] = await Promise.all([
+    getCareerSummary(),
+    getFormatBreakdown(),
+    getTrendData(),
+  ]);
+
+  const hasData = summary.matches > 0;
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-white">{PLAYER.name}</h1>
+          <p className="text-gray-400 mt-1">Career Analytics Dashboard</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href="/data-entry"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <span>✏️</span>
+          Add Performance
+        </Link>
+      </div>
+
+      {!hasData ? (
+        <Card>
+          <CardContent className="text-center py-12">
+            <span className="text-6xl mb-4 block">🏏</span>
+            <h2 className="text-xl font-semibold text-white mb-2">
+              Welcome to Your Cricket Analytics Dashboard
+            </h2>
+            <p className="text-gray-400 mb-6">
+              Start by adding your first match performance to see your career statistics.
+            </p>
+            <Link
+              href="/data-entry"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            >
+              Add First Match →
+            </Link>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Career Summary Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <StatCard
+              title="Matches"
+              value={summary.matches}
+              icon="🏏"
+            />
+            <StatCard
+              title="Runs"
+              value={summary.runs.toLocaleString()}
+              subtitle={`Avg: ${summary.battingAverage ?? "-"}`}
+              icon="🏃"
+            />
+            <StatCard
+              title="Highest"
+              value={formatBattingScore(
+                summary.highestScore.runs,
+                summary.highestScore.isNotOut
+              )}
+              icon="⭐"
+            />
+            <StatCard
+              title="Wickets"
+              value={summary.wickets}
+              subtitle={`Avg: ${summary.bowlingAverage ?? "-"}`}
+              icon="🎯"
+            />
+            <StatCard
+              title="Best Bowling"
+              value={formatBowlingFigures(
+                summary.bestBowling.wickets,
+                summary.bestBowling.runs
+              )}
+              icon="🔥"
+            />
+            <StatCard
+              title="Catches"
+              value={summary.catches}
+              icon="🧤"
+            />
+          </div>
+
+          {/* Secondary Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            <StatCard title="50s" value={summary.fifties} />
+            <StatCard title="100s" value={summary.centuries} />
+            <StatCard title="Strike Rate" value={summary.strikeRate} />
+            <StatCard title="Economy" value={summary.economy} />
+            <StatCard title="5W Hauls" value={summary.fiveWicketHauls} />
+            <StatCard title="Ducks" value={summary.ducks} />
+            <StatCard title="Not Outs" value={summary.notOuts} />
+            <StatCard title="Win %" value={`${summary.winPercentage}%`} />
+          </div>
+
+          {/* Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {trends.length > 0 && <RunsOverTimeChart data={trends} />}
+            {formats.length > 0 && <FormatBreakdownChart data={formats} metric="runs" />}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {formats.length > 0 && <FormatBreakdownChart data={formats} metric="wickets" />}
+            {trends.length > 0 && <RecentFormChart data={trends} limit={10} />}
+          </div>
+
+          {/* Format Breakdown Table */}
+          {formats.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Format-wise Statistics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-800">
+                        <th className="text-left py-3 px-4 text-gray-400 font-medium">Format</th>
+                        <th className="text-center py-3 px-4 text-gray-400 font-medium">Mat</th>
+                        <th className="text-center py-3 px-4 text-gray-400 font-medium">Runs</th>
+                        <th className="text-center py-3 px-4 text-gray-400 font-medium">Avg</th>
+                        <th className="text-center py-3 px-4 text-gray-400 font-medium">SR</th>
+                        <th className="text-center py-3 px-4 text-gray-400 font-medium">50s</th>
+                        <th className="text-center py-3 px-4 text-gray-400 font-medium">100s</th>
+                        <th className="text-center py-3 px-4 text-gray-400 font-medium">Wkts</th>
+                        <th className="text-center py-3 px-4 text-gray-400 font-medium">Econ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {formats.map((f) => (
+                        <tr key={f.format} className="border-b border-gray-800/50 hover:bg-gray-800/30">
+                          <td className="py-3 px-4 text-white font-medium">{f.format}</td>
+                          <td className="text-center py-3 px-4 text-gray-300">{f.matches}</td>
+                          <td className="text-center py-3 px-4 text-gray-300">{f.runs}</td>
+                          <td className="text-center py-3 px-4 text-gray-300">{f.battingAverage ?? "-"}</td>
+                          <td className="text-center py-3 px-4 text-gray-300">{f.strikeRate}</td>
+                          <td className="text-center py-3 px-4 text-gray-300">{f.fifties}</td>
+                          <td className="text-center py-3 px-4 text-gray-300">{f.centuries}</td>
+                          <td className="text-center py-3 px-4 text-gray-300">{f.wickets}</td>
+                          <td className="text-center py-3 px-4 text-gray-300">{f.economy}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      }
+    >
+      <DashboardContent />
+    </Suspense>
   );
 }
