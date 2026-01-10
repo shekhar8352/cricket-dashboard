@@ -13,7 +13,8 @@ export interface IMatch extends Document {
     venueType?: "home" | "away" | "neutral";
     result?: "won" | "lost" | "draw" | "tie" | "no_result";
     resultMargin?: string;
-    pitchType?: "batting" | "bowling" | "balanced";
+    pitchType?: "batting" | "bowling" | "balanced" | "green" | "dusty" | "hard" | "flat" | "dry" | "damp";
+    weatherCondition?: "sunny" | "overcast" | "rainy" | "humid" | "windy";
     tossWinner?: string;
     tossDecision?: "bat" | "bowl";
     matchType?: "group" | "knockout" | "final" | "regular";
@@ -26,7 +27,7 @@ const MatchSchema = new Schema<IMatch>(
         series: { type: Schema.Types.ObjectId, ref: "Series" },
         format: {
             type: String,
-            enum: ["Test", "ODI", "T20", "First-class", "List-A", "T20-domestic"],
+            enum: ["Test", "ODI", "T20", "First-class", "List-A", "T20-domestic", "Youth ODI", "Youth Test", "Youth T20"],
             required: true,
         },
         level: {
@@ -51,7 +52,11 @@ const MatchSchema = new Schema<IMatch>(
         resultMargin: { type: String },
         pitchType: {
             type: String,
-            enum: ["batting", "bowling", "balanced"],
+            enum: ["green", "dusty", "hard", "flat", "dry", "damp"],
+        },
+        weatherCondition: {
+            type: String,
+            enum: ["sunny", "overcast", "rainy", "humid", "windy"],
         },
         tossWinner: { type: String },
         tossDecision: {

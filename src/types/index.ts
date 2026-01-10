@@ -9,6 +9,7 @@ import {
     SeriesType,
     SeriesFormat,
     SeriesStatus,
+    WeatherCondition,
 } from "@/lib/constants";
 
 // ============================================
@@ -86,6 +87,7 @@ export interface MatchFormData {
     result?: MatchResult;
     resultMargin?: string;
     pitchType?: PitchType;
+    weatherCondition?: WeatherCondition;
     tossWinner?: string;
     tossDecision?: "bat" | "bowl";
     matchType?: MatchTypeOption;
@@ -107,6 +109,8 @@ export interface MatchListItem {
     result?: MatchResult;
     resultMargin?: string;
     hasPerformance?: boolean;
+    weatherCondition?: WeatherCondition;
+    pitchType?: PitchType;
 }
 
 export interface MatchFilters {

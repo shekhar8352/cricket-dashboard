@@ -8,7 +8,9 @@ import {
     MATCH_FORMATS,
     MATCH_LEVELS,
     VENUE_TYPES,
-    MATCH_RESULTS
+    MATCH_RESULTS,
+    PITCH_TYPES,
+    WEATHER_CONDITIONS
 } from "@/lib/constants";
 import {
     Calendar,
@@ -16,7 +18,9 @@ import {
     MapPin,
     Trophy,
     Save,
-    ChevronRight
+    ChevronRight,
+    Cloud,
+    LayoutDashboard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +34,8 @@ const matchSchema = z.object({
     venueType: z.enum(VENUE_TYPES).optional(),
     seriesId: z.string().optional(),
     result: z.enum(MATCH_RESULTS).optional(),
+    pitchType: z.enum(PITCH_TYPES).optional(),
+    weatherCondition: z.enum(WEATHER_CONDITIONS).optional(),
 });
 
 interface MatchFormProps {
@@ -59,6 +65,8 @@ export function MatchForm({
             format: initialData?.format || "T20",
             level: initialData?.level || "club",
             venueType: initialData?.venueType || "home",
+            pitchType: initialData?.pitchType || "flat",
+            weatherCondition: initialData?.weatherCondition || "sunny",
         },
     });
 
@@ -196,6 +204,44 @@ export function MatchForm({
                         </div>
                     </div>
                 </div>
+
+                {/* Conditions Section */}
+                <div className="space-y-6 md:col-span-2 lg:col-span-1">
+                    <div className="flex items-center gap-2 pb-2 border-b border-white/5">
+                        <Cloud size={16} className="text-gray-400" />
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">Conditions</h3>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-300">Pitch Condition</label>
+                            <select
+                                {...register("pitchType")}
+                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer"
+                            >
+                                {PITCH_TYPES.map((p) => (
+                                    <option key={p} value={p} className="bg-gray-900">
+                                        {p.charAt(0).toUpperCase() + p.slice(1)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-300">Weather</label>
+                            <select
+                                {...register("weatherCondition")}
+                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer"
+                            >
+                                {WEATHER_CONDITIONS.map((w) => (
+                                    <option key={w} value={w} className="bg-gray-900">
+                                        {w.charAt(0).toUpperCase() + w.slice(1)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -219,5 +265,6 @@ export function MatchForm({
                 </button>
             </div>
         </form>
+
     );
 }

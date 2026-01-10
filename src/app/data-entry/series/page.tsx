@@ -15,7 +15,8 @@ import {
     Trash2,
     CheckCircle2,
     Activity,
-    Layers
+    Layers,
+    FileEdit
 } from "lucide-react";
 
 export default function SeriesPage() {
@@ -24,6 +25,7 @@ export default function SeriesPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showForm, setShowForm] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [editingSeries, setEditingSeries] = useState<SeriesListItem | null>(null);
 
     // Fetch series
     useEffect(() => {
@@ -49,19 +51,33 @@ export default function SeriesPage() {
         setError(null);
 
         try {
-            const res = await fetch("/api/series", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
-            });
+            let res;
+            if (editingSeries) {
+                res = await fetch(`/api/series/${editingSeries._id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(formData),
+                });
+            } else {
+                res = await fetch("/api/series", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(formData),
+                });
+            }
 
             const data = await res.json();
 
             if (data.success) {
-                setSeries([data.data, ...series]);
+                if (editingSeries) {
+                    setSeries(series.map(s => s._id === editingSeries._id ? data.data : s));
+                    setEditingSeries(null);
+                } else {
+                    setSeries([data.data, ...series]);
+                }
                 setShowForm(false);
             } else {
-                setError(data.error || "Failed to create series");
+                setError(data.error || `Failed to ${editingSeries ? "update" : "create"} series`);
             }
         } catch (err) {
             setError("An error occurred");
@@ -85,6 +101,13 @@ export default function SeriesPage() {
         }
     };
 
+    const handleEdit = (seriesItem: SeriesListItem) => {
+        setEditingSeries(seriesItem);
+        setShowForm(true);
+        // Scroll to top to see form
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
     return (
         <div className="space-y-12 pb-12">
             {/* Header */}
@@ -102,10 +125,13 @@ export default function SeriesPage() {
                     <p className="text-gray-400 font-medium mt-1">Create and manage your career tournaments</p>
                 </div>
                 <button
-                    onClick={() => setShowForm(!showForm)}
+                    onClick={() => {
+                        setShowForm(!showForm);
+                        if (showForm) setEditingSeries(null);
+                    }}
                     className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${showForm
-                            ? "bg-white/10 text-white"
-                            : "bg-emerald-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:bg-emerald-500"
+                        ? "bg-white/10 text-white"
+                        : "bg-emerald-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:bg-emerald-500"
                         }`}
                 >
                     {showForm ? (
@@ -124,8 +150,8 @@ export default function SeriesPage() {
                 <div className="animate-in slide-in-from-top-4 duration-300">
                     <Card className="overflow-hidden">
                         <div className="bg-gradient-to-r from-emerald-600/20 to-blue-600/20 p-6 border-b border-white/5">
-                            <h2 className="text-xl font-black text-white">Create New Series</h2>
-                            <p className="text-gray-400 text-sm mt-1">Define the context for a group of matches.</p>
+                            <h2 className="text-xl font-black text-white">{editingSeries ? "Edit Series" : "Create New Series"}</h2>
+                            <p className="text-gray-400 text-sm mt-1">{editingSeries ? "Update series details" : "Define the context for a group of matches."}</p>
                         </div>
                         <CardContent className="p-8">
                             {error && (
@@ -134,7 +160,12 @@ export default function SeriesPage() {
                                     {error}
                                 </div>
                             )}
-                            <SeriesForm onSubmit={handleSubmit} isLoading={isSubmitting} />
+                            <SeriesForm
+                                onSubmit={handleSubmit}
+                                isLoading={isSubmitting}
+                                initialData={editingSeries || undefined}
+                                key={editingSeries ? editingSeries._id : "new"} // Force re-render on edit switch
+                            />
                         </CardContent>
                     </Card>
                 </div>
@@ -219,6 +250,13 @@ export default function SeriesPage() {
                                         <div className={`w-1.5 h-1.5 rounded-full ${s.status === "completed" ? "bg-emerald-400" : s.status === "ongoing" ? "bg-blue-400" : "bg-gray-400"}`} />
                                         {s.status}
                                     </div>
+
+                                    <button
+                                        onClick={() => handleEdit(s)}
+                                        className="p-2.5 text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all"
+                                    >
+                                        <FileEdit size={18} />
+                                    </button>
 
                                     <button
                                         onClick={() => handleDelete(s._id)}

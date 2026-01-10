@@ -15,7 +15,8 @@ import {
     Calendar,
     Trash2,
     CheckCircle2,
-    Clock
+    Clock,
+    FileEdit
 } from "lucide-react";
 
 export default function MatchPage() {
@@ -26,6 +27,7 @@ export default function MatchPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showForm, setShowForm] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [editingMatch, setEditingMatch] = useState<MatchListItem | null>(null);
 
     // Fetch data
     useEffect(() => {
@@ -63,19 +65,34 @@ export default function MatchPage() {
         setError(null);
 
         try {
-            const res = await fetch("/api/matches", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
-            });
+            let res;
+            if (editingMatch) {
+                res = await fetch(`/api/matches/${editingMatch._id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(formData),
+                });
+            } else {
+                res = await fetch("/api/matches", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(formData),
+                });
+            }
 
             const data = await res.json();
 
             if (data.success) {
-                // Navigate to performance entry
-                router.push(`/data-entry/match/${data.data._id}`);
+                if (editingMatch) {
+                    setMatches(matches.map(m => m._id === editingMatch._id ? { ...m, ...data.data } : m));
+                    setEditingMatch(null);
+                    setShowForm(false);
+                } else {
+                    // Navigate to performance entry for new matches
+                    router.push(`/data-entry/match/${data.data._id}`);
+                }
             } else {
-                setError(data.error || "Failed to create match");
+                setError(data.error || `Failed to ${editingMatch ? "update" : "create"} match`);
             }
         } catch (err) {
             setError("An error occurred");
@@ -99,6 +116,12 @@ export default function MatchPage() {
         }
     };
 
+    const handleEdit = (match: MatchListItem) => {
+        setEditingMatch(match);
+        setShowForm(true);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
     return (
         <div className="space-y-12 pb-12">
             {/* Header */}
@@ -116,10 +139,13 @@ export default function MatchPage() {
                     <p className="text-gray-400 font-medium mt-1">Create matches and enter performance data</p>
                 </div>
                 <button
-                    onClick={() => setShowForm(!showForm)}
+                    onClick={() => {
+                        setShowForm(!showForm);
+                        if (showForm) setEditingMatch(null);
+                    }}
                     className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${showForm
-                            ? "bg-white/10 text-white"
-                            : "bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:bg-blue-500"
+                        ? "bg-white/10 text-white"
+                        : "bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:bg-blue-500"
                         }`}
                 >
                     {showForm ? (
@@ -138,8 +164,8 @@ export default function MatchPage() {
                 <div className="animate-in slide-in-from-top-4 duration-300">
                     <Card className="overflow-hidden">
                         <div className="bg-gradient-to-r from-blue-600/20 to-emerald-600/20 p-6 border-b border-white/5">
-                            <h2 className="text-xl font-black text-white">Create New Match</h2>
-                            <p className="text-gray-400 text-sm mt-1">Enter the basic details of the match to begin.</p>
+                            <h2 className="text-xl font-black text-white">{editingMatch ? "Edit Match Details" : "Create New Match"}</h2>
+                            <p className="text-gray-400 text-sm mt-1">{editingMatch ? "Update the match venue, dates, or format." : "Enter the basic details of the match to begin."}</p>
                         </div>
                         <CardContent className="p-8">
                             {error && (
@@ -152,6 +178,8 @@ export default function MatchPage() {
                                 seriesList={series}
                                 onSubmit={handleSubmit}
                                 isLoading={isSubmitting}
+                                initialData={editingMatch || undefined}
+                                key={editingMatch ? editingMatch._id : "new"}
                             />
                         </CardContent>
                     </Card>
@@ -258,6 +286,13 @@ export default function MatchPage() {
                                             Pending Performance
                                         </Link>
                                     )}
+
+                                    <button
+                                        onClick={() => handleEdit(match)}
+                                        className="p-2.5 text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all"
+                                    >
+                                        <FileEdit size={18} />
+                                    </button>
 
                                     <button
                                         onClick={() => handleDelete(match._id)}

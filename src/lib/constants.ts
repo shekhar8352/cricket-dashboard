@@ -13,6 +13,10 @@ export const MATCH_FORMATS = [
     "First-class",
     "List-A",
     "T20-domestic",
+    "Youth ODI",
+    "Youth ODI",
+    "Youth Test",
+    "Youth T20",
 ] as const;
 
 export type MatchFormat = (typeof MATCH_FORMATS)[number];
@@ -41,7 +45,7 @@ export const SERIES_TYPES = [
 export type SeriesType = (typeof SERIES_TYPES)[number];
 
 // Series formats
-export const SERIES_FORMATS = ["Test", "ODI", "T20", "mixed"] as const;
+export const SERIES_FORMATS = ["Test", "ODI", "T20", "mixed", "Youth ODI", "Youth Test", "Youth T20"] as const;
 
 export type SeriesFormat = (typeof SERIES_FORMATS)[number];
 
@@ -67,9 +71,14 @@ export const VENUE_TYPES = ["home", "away", "neutral"] as const;
 export type VenueType = (typeof VENUE_TYPES)[number];
 
 // Pitch types
-export const PITCH_TYPES = ["batting", "bowling", "balanced"] as const;
+export const PITCH_TYPES = ["green", "dusty", "hard", "flat", "dry", "damp"] as const;
 
 export type PitchType = (typeof PITCH_TYPES)[number];
+
+// Weather conditions
+export const WEATHER_CONDITIONS = ["sunny", "overcast", "rainy", "humid", "windy"] as const;
+
+export type WeatherCondition = (typeof WEATHER_CONDITIONS)[number];
 
 // Match types (tournament context)
 export const MATCH_TYPE_OPTIONS = [
@@ -102,7 +111,7 @@ export type TossDecision = (typeof TOSS_DECISIONS)[number];
 
 // Helper to check if format supports multiple innings
 export const isMultiInningsFormat = (format: MatchFormat): boolean => {
-    return format === "Test" || format === "First-class";
+    return format === "Test" || format === "First-class" || format === "Youth Test";
 };
 
 // Display labels for formats
@@ -113,6 +122,9 @@ export const FORMAT_LABELS: Record<MatchFormat, string> = {
     "First-class": "First Class",
     "List-A": "List A",
     "T20-domestic": "T20 Domestic",
+    "Youth ODI": "Youth ODI",
+    "Youth Test": "Youth Test",
+    "Youth T20": "Youth T20",
 };
 
 // Display labels for levels

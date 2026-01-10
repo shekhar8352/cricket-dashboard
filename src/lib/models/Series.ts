@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface ISeries extends Document {
     name: string;
     type: "bilateral" | "tri-series" | "tournament" | "league";
-    format: "Test" | "ODI" | "T20" | "mixed";
+    format: "Test" | "ODI" | "T20" | "mixed" | "Youth ODI" | "Youth Test" | "Youth T20";
     level: "international" | "ipl" | "domestic" | "ranji" | "under19" | "list-a";
     startDate: Date;
     endDate?: Date;
@@ -31,7 +31,7 @@ const SeriesSchema = new Schema<ISeries>(
         },
         format: {
             type: String,
-            enum: ["Test", "ODI", "T20", "mixed"],
+            enum: ["Test", "ODI", "T20", "mixed", "Youth ODI", "Youth Test", "Youth T20"],
             required: true,
         },
         level: {
