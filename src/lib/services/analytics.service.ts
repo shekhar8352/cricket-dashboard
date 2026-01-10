@@ -39,6 +39,16 @@ function buildMatchFilterQuery(filters?: AnalyticsFilters): Record<string, unkno
 }
 
 /**
+ * Prefixes match filter keys for use after $unwind in aggregation
+ */
+function buildPrefixedMatchFilter(matchFilter: Record<string, any>): Record<string, any> {
+    return Object.keys(matchFilter).reduce((acc, key) => {
+        acc[`matchData.${key}`] = matchFilter[key];
+        return acc;
+    }, {} as Record<string, any>);
+}
+
+/**
  * Get career summary statistics
  */
 export async function getCareerSummary(
@@ -355,7 +365,7 @@ export async function getFormatBreakdown(
             },
         },
         { $unwind: "$matchData" },
-        { $match: { matchData: matchFilter } },
+        { $match: buildPrefixedMatchFilter(matchFilter) },
         {
             $group: {
                 _id: "$matchData.format",
@@ -461,7 +471,7 @@ export async function getTrendData(
             },
         },
         { $unwind: "$matchData" },
-        { $match: { matchData: matchFilter } },
+        { $match: buildPrefixedMatchFilter(matchFilter) },
         { $sort: { "matchData.date": 1 } },
         {
             $project: {
@@ -557,7 +567,7 @@ export async function getOpponentStats(
             },
         },
         { $unwind: "$matchData" },
-        { $match: { matchData: matchFilter } },
+        { $match: buildPrefixedMatchFilter(matchFilter) },
         {
             $group: {
                 _id: "$matchData.opponent",
@@ -629,7 +639,7 @@ export async function getVenueStats(
             },
         },
         { $unwind: "$matchData" },
-        { $match: { matchData: matchFilter } },
+        { $match: buildPrefixedMatchFilter(matchFilter) },
         {
             $group: {
                 _id: {
