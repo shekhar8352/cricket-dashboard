@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { Pagination, usePagination } from "@/components/ui/Pagination";
 import { SeriesForm } from "@/components/forms";
 import { SeriesFormData, SeriesListItem } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -21,6 +22,15 @@ import {
 
 export default function SeriesPage() {
     const [series, setSeries] = useState<SeriesListItem[]>([]);
+    const { 
+        currentPage, 
+        setCurrentPage, 
+        itemsPerPage, 
+        setItemsPerPage, 
+        totalPages, 
+        paginatedItems: paginatedSeries, 
+        totalItems 
+    } = usePagination(series, 5);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showForm, setShowForm] = useState(false);
@@ -202,7 +212,7 @@ export default function SeriesPage() {
                     </Card>
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
-                        {series.map((s) => (
+                        {paginatedSeries.map((s) => (
                             <div
                                 key={s._id}
                                 className="group relative glass-card p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300"
@@ -268,6 +278,21 @@ export default function SeriesPage() {
                             </div>
                         ))}
                     </div>
+                )}
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <Card className="bg-white/[0.02] border-white/5">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                            itemsPerPage={itemsPerPage}
+                            totalItems={totalItems}
+                            onItemsPerPageChange={setItemsPerPage}
+                            itemsPerPageOptions={[5, 10, 20]}
+                        />
+                    </Card>
                 )}
             </div>
         </div>

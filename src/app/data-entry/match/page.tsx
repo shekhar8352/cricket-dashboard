@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { Pagination, usePagination } from "@/components/ui/Pagination";
 import { MatchForm } from "@/components/forms";
 import { MatchListItem, SeriesListItem } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -22,6 +23,15 @@ import {
 export default function MatchPage() {
     const router = useRouter();
     const [matches, setMatches] = useState<MatchListItem[]>([]);
+    const { 
+        currentPage, 
+        setCurrentPage, 
+        itemsPerPage, 
+        setItemsPerPage, 
+        totalPages, 
+        paginatedItems: paginatedMatches, 
+        totalItems 
+    } = usePagination(matches, 5);
     const [series, setSeries] = useState<SeriesListItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -217,7 +227,7 @@ export default function MatchPage() {
                     </Card>
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
-                        {matches.map((match) => (
+                        {paginatedMatches.map((match) => (
                             <div
                                 key={match._id}
                                 className="group relative glass-card p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300"
@@ -304,6 +314,21 @@ export default function MatchPage() {
                             </div>
                         ))}
                     </div>
+                )}
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <Card className="bg-white/[0.02] border-white/5">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                            itemsPerPage={itemsPerPage}
+                            totalItems={totalItems}
+                            onItemsPerPageChange={setItemsPerPage}
+                            itemsPerPageOptions={[5, 10, 20]}
+                        />
+                    </Card>
                 )}
             </div>
         </div>

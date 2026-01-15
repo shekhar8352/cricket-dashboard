@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { Card, CardHeader, CardTitle, CardContent, StatCard } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
 import {
     RunsOverTimeChart,
     AverageTrendChart,
@@ -33,6 +34,10 @@ export default function AnalyticsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [filters, setFilters] = useState<AnalyticsFilters>({});
     const [showFilters, setShowFilters] = useState(true);
+    
+    // Pagination for opponents table
+    const [opponentPage, setOpponentPage] = useState(1);
+    const [opponentItemsPerPage, setOpponentItemsPerPage] = useState(5);
 
     useEffect(() => {
         fetchAnalytics();
@@ -362,43 +367,65 @@ export default function AnalyticsPage() {
                     )}
 
                     {/* Opponent Statistics Table */}
-                    {opponents.length > 0 && (
-                        <div className="space-y-4">
-                            <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400/80 px-1">Opponent Summary</h2>
-                            <Card className="p-0 overflow-hidden">
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="bg-white/5 border-b border-white/10">
-                                                <th className="text-left py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Opponent</th>
-                                                <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Mat</th>
-                                                <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Runs</th>
-                                                <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Avg</th>
-                                                <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">SR</th>
-                                                <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Wkts</th>
-                                                <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Bowl Avg</th>
-                                                <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Econ</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-white/5">
-                                            {opponents.map((o) => (
-                                                <tr key={o.opponent} className="hover:bg-white/[0.02] transition-colors">
-                                                    <td className="py-4 px-6 text-white font-bold">{o.opponent}</td>
-                                                    <td className="text-center py-4 px-6 text-gray-300 font-medium">{o.matches}</td>
-                                                    <td className="text-center py-4 px-6 font-black text-blue-400">{o.runs}</td>
-                                                    <td className="text-center py-4 px-6 text-gray-300 font-medium">{o.battingAverage ?? "-"}</td>
-                                                    <td className="text-center py-4 px-6 text-gray-300 font-medium">{o.strikeRate}</td>
-                                                    <td className="text-center py-4 px-6 font-black text-emerald-400">{o.wickets}</td>
-                                                    <td className="text-center py-4 px-6 text-gray-300 font-medium">{o.bowlingAverage ?? "-"}</td>
-                                                    <td className="text-center py-4 px-6 text-gray-300 font-medium">{o.economy}</td>
+                    {opponents.length > 0 && (() => {
+                        const opponentTotalPages = Math.ceil(opponents.length / opponentItemsPerPage);
+                        const opponentStartIndex = (opponentPage - 1) * opponentItemsPerPage;
+                        const paginatedOpponents = opponents.slice(opponentStartIndex, opponentStartIndex + opponentItemsPerPage);
+                        
+                        return (
+                            <div className="space-y-4">
+                                <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400/80 px-1">Opponent Summary</h2>
+                                <Card className="p-0 overflow-hidden">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="bg-white/5 border-b border-white/10">
+                                                    <th className="text-left py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Opponent</th>
+                                                    <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Mat</th>
+                                                    <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Runs</th>
+                                                    <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Avg</th>
+                                                    <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">SR</th>
+                                                    <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Wkts</th>
+                                                    <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Bowl Avg</th>
+                                                    <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Econ</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </Card>
-                        </div>
-                    )}
+                                            </thead>
+                                            <tbody className="divide-y divide-white/5">
+                                                {paginatedOpponents.map((o) => (
+                                                    <tr key={o.opponent} className="hover:bg-white/[0.02] transition-colors">
+                                                        <td className="py-4 px-6 text-white font-bold">{o.opponent}</td>
+                                                        <td className="text-center py-4 px-6 text-gray-300 font-medium">{o.matches}</td>
+                                                        <td className="text-center py-4 px-6 font-black text-blue-400">{o.runs}</td>
+                                                        <td className="text-center py-4 px-6 text-gray-300 font-medium">{o.battingAverage ?? "-"}</td>
+                                                        <td className="text-center py-4 px-6 text-gray-300 font-medium">{o.strikeRate}</td>
+                                                        <td className="text-center py-4 px-6 font-black text-emerald-400">{o.wickets}</td>
+                                                        <td className="text-center py-4 px-6 text-gray-300 font-medium">{o.bowlingAverage ?? "-"}</td>
+                                                        <td className="text-center py-4 px-6 text-gray-300 font-medium">{o.economy}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {opponentTotalPages > 1 && (
+                                        <div className="border-t border-white/5">
+                                            <Pagination
+                                                currentPage={opponentPage}
+                                                totalPages={opponentTotalPages}
+                                                onPageChange={setOpponentPage}
+                                                itemsPerPage={opponentItemsPerPage}
+                                                totalItems={opponents.length}
+                                                onItemsPerPageChange={(val) => {
+                                                    setOpponentItemsPerPage(val);
+                                                    setOpponentPage(1);
+                                                }}
+                                                itemsPerPageOptions={[5, 10, 20]}
+                                            />
+                                        </div>
+                                    )}
+                                </Card>
+                            </div>
+                        );
+                    })()}
                 </>
             )}
         </div>

@@ -35,7 +35,7 @@ export async function getAllMatches(
 
     const matches = await Match.find(query)
         .populate("series", "name")
-        .sort({ date: 1 })
+        .sort({ date: -1 })
         .lean<any[]>();
 
     // Get performance existence for each match
