@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IMatch extends Document {
     series?: mongoose.Types.ObjectId;
-    format: "Test" | "ODI" | "T20" | "First-class" | "List-A" | "T20-domestic";
+    format: "Test" | "ODI" | "T20" | "T20I" | "First-class" | "List-A" | "T20-domestic" | "Youth ODI" | "Youth Test" | "Youth T20";
     level: "international" | "ipl" | "domestic" | "ranji" | "under19" | "list-a" | "club";
     date: Date;
     venue: string;
@@ -28,7 +28,7 @@ const MatchSchema = new Schema<IMatch>(
         series: { type: Schema.Types.ObjectId, ref: "Series" },
         format: {
             type: String,
-            enum: ["Test", "ODI", "T20", "First-class", "List-A", "T20-domestic", "Youth ODI", "Youth Test", "Youth T20"],
+            enum: ["Test", "ODI", "T20", "T20I", "First-class", "List-A", "T20-domestic", "Youth ODI", "Youth Test", "Youth T20"],
             required: true,
         },
         level: {

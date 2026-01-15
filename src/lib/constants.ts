@@ -10,6 +10,7 @@ export const MATCH_FORMATS = [
     "Test",
     "ODI",
     "T20",
+    "T20I",
     "First-class",
     "List-A",
     "T20-domestic",
@@ -45,7 +46,7 @@ export const SERIES_TYPES = [
 export type SeriesType = (typeof SERIES_TYPES)[number];
 
 // Series formats
-export const SERIES_FORMATS = ["Test", "ODI", "T20", "mixed", "Youth ODI", "Youth Test", "Youth T20"] as const;
+export const SERIES_FORMATS = ["Test", "ODI", "T20", "T20I", "First-class", "List-A", "mixed", "Youth ODI", "Youth Test", "Youth T20"] as const;
 
 export type SeriesFormat = (typeof SERIES_FORMATS)[number];
 
@@ -118,7 +119,8 @@ export const isMultiInningsFormat = (format: MatchFormat): boolean => {
 export const FORMAT_LABELS: Record<MatchFormat, string> = {
     Test: "Test Match",
     ODI: "One Day International",
-    T20: "T20 International",
+    T20: "T20 Match",
+    T20I: "T20 International",
     "First-class": "First Class",
     "List-A": "List A",
     "T20-domestic": "T20 Domestic",

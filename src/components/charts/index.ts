@@ -8,4 +8,7 @@ export {
     FormatBreakdownChart,
     OpponentStatsChart,
     RecentFormChart,
+    WinLossChart,
+    DismissalBreakdownChart,
+    TossAnalysisChart,
 } from "./Charts";

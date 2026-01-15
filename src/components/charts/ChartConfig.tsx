@@ -83,6 +83,9 @@ export const chartColors = {
     dangerLight: "rgba(239, 68, 68, 0.1)",
     purple: "rgb(139, 92, 246)", // violet-500
     purpleLight: "rgba(139, 92, 246, 0.1)",
+    success: "rgb(34, 197, 94)", // green-500
+    warning: "rgb(234, 179, 8)", // yellow-500
+    info: "rgb(59, 130, 246)", // blue-500
 };
 
 // Format colors array for pie/doughnut charts

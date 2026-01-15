@@ -10,6 +10,9 @@ import {
     WicketsChart,
     FormatBreakdownChart,
     OpponentStatsChart,
+    WinLossChart,
+    DismissalBreakdownChart,
+    TossAnalysisChart,
 } from "@/components/charts";
 import { PLAYER, MATCH_FORMATS, MATCH_LEVELS } from "@/lib/constants";
 import {
@@ -87,8 +90,8 @@ export default function AnalyticsPage() {
                 <button
                     onClick={() => setShowFilters(!showFilters)}
                     className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${showFilters
-                            ? "bg-white text-gray-950"
-                            : "bg-blue-600/10 text-blue-400 border border-blue-600/20"
+                        ? "bg-white text-gray-950"
+                        : "bg-blue-600/10 text-blue-400 border border-blue-600/20"
                         }`}
                 >
                     <Filter size={18} />
@@ -278,6 +281,40 @@ export default function AnalyticsPage() {
                         <div className="space-y-4">
                             <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400/80 px-1">Bowling Strike Rate</h2>
                             {trends.length > 0 && <WicketsChart data={trends} />}
+                        </div>
+                    </div>
+
+                    {/* New Charts Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="space-y-4">
+                            <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400/80 px-1">Match Results</h2>
+                            {summary && (
+                                <WinLossChart
+                                    won={summary.matchesWon}
+                                    lost={summary.matchesLost}
+                                    draw={summary.matchesDrawn}
+                                    tie={0} // TODO: Add tie to summary if needed
+                                    noResult={summary.matches - (summary.matchesWon + summary.matchesLost + summary.matchesDrawn)}
+                                />
+                            )}
+                        </div>
+                        <div className="space-y-4">
+                            <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400/80 px-1">Dismissal Breakdown</h2>
+                            {/* Placeholder data until API is updated */}
+                            <DismissalBreakdownChart data={[
+                                { type: "caught", count: summary?.matchesWon || 0 }, // temp using won for demo
+                                { type: "bowled", count: summary?.matchesLost || 0 }
+                            ]} />
+                        </div>
+                        <div className="space-y-4">
+                            <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400/80 px-1">Toss Analysis</h2>
+                            {/* Placeholder data until API is updated */}
+                            <TossAnalysisChart data={{
+                                wonTossWonMatch: summary?.matchesWon || 0,
+                                wonTossLostMatch: summary?.matchesLost || 0,
+                                lostTossWonMatch: 0,
+                                lostTossLostMatch: 0
+                            }} />
                         </div>
                     </div>
 

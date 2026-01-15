@@ -324,3 +324,137 @@ export function RecentFormChart({ data, limit = 10 }: RecentFormProps) {
         </Card>
     );
 }
+
+// Win/Loss Ratio Chart
+interface WinLossProps {
+    won: number;
+    lost: number;
+    draw: number;
+    tie: number;
+    noResult: number;
+}
+
+export function WinLossChart({ won, lost, draw, tie, noResult }: WinLossProps) {
+    const chartData = {
+        labels: ["Won", "Lost", "Draw", "Tie", "No Result"],
+        datasets: [
+            {
+                data: [won, lost, draw, tie, noResult],
+                backgroundColor: [
+                    chartColors.success,
+                    chartColors.danger,
+                    chartColors.warning,
+                    chartColors.info,
+                    "#9ca3af",
+                ],
+                borderWidth: 0,
+            },
+        ],
+    };
+
+    const options = {
+        ...defaultChartOptions,
+        plugins: {
+            ...defaultChartOptions.plugins,
+            legend: {
+                position: "right" as const,
+                labels: { color: "#9ca3af", padding: 20 },
+            },
+        },
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Match Results</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="h-[300px]">
+                    <Doughnut data={chartData} options={options} />
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+// Dismissal Breakdown Chart
+interface DismissalStats {
+    type: string;
+    count: number;
+}
+
+export function DismissalBreakdownChart({ data }: { data: DismissalStats[] }) {
+    const chartData = {
+        labels: data.map((d) => d.type.charAt(0).toUpperCase() + d.type.slice(1).replace("_", " ")),
+        datasets: [
+            {
+                data: data.map((d) => d.count),
+                backgroundColor: formatColors.slice(0, data.length),
+                borderWidth: 0,
+            },
+        ],
+    };
+
+    const options = {
+        ...defaultChartOptions,
+        plugins: {
+            ...defaultChartOptions.plugins,
+            legend: {
+                position: "right" as const,
+                labels: { color: "#9ca3af", padding: 20 },
+            },
+        },
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Dismissal Types</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="h-[300px]">
+                    <Doughnut data={chartData} options={options} />
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+// Toss Analysis Chart
+interface TossStats {
+    wonTossWonMatch: number;
+    wonTossLostMatch: number;
+    lostTossWonMatch: number;
+    lostTossLostMatch: number;
+}
+
+export function TossAnalysisChart({ data }: { data: TossStats }) {
+    const chartData = {
+        labels: ["Won Toss", "Lost Toss"],
+        datasets: [
+            {
+                label: "Won Match",
+                data: [data.wonTossWonMatch, data.lostTossWonMatch],
+                backgroundColor: chartColors.success,
+            },
+            {
+                label: "Lost Match",
+                data: [data.wonTossLostMatch, data.lostTossLostMatch],
+                backgroundColor: chartColors.danger,
+            },
+        ],
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Impact of Toss</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="h-[300px]">
+                    <Bar data={chartData} options={defaultChartOptions} />
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
