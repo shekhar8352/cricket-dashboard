@@ -212,7 +212,7 @@ export async function getAllPerformancesWithMatches(): Promise<
             $unwind: "$matchData",
         },
         {
-            $sort: { "matchData.date": -1 },
+            $sort: { "matchData.date": 1 },
         },
     ]);
 

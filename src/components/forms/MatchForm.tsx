@@ -10,7 +10,9 @@ import {
     VENUE_TYPES,
     MATCH_RESULTS,
     PITCH_TYPES,
-    WEATHER_CONDITIONS
+    WEATHER_CONDITIONS,
+    MATCH_TYPE_OPTIONS,
+    TOSS_DECISIONS
 } from "@/lib/constants";
 import {
     Calendar,
@@ -36,6 +38,10 @@ const matchSchema = z.object({
     venueType: z.enum(VENUE_TYPES).optional(),
     seriesId: z.string().optional(),
     result: z.enum(MATCH_RESULTS).optional(),
+    resultMargin: z.string().optional(),
+    tossWinner: z.string().optional(),
+    tossDecision: z.enum(TOSS_DECISIONS).optional(),
+    matchType: z.enum(MATCH_TYPE_OPTIONS).optional(),
     pitchType: z.enum(PITCH_TYPES).optional(),
     weatherCondition: z.enum(WEATHER_CONDITIONS).optional(),
     notes: z.string().optional(),
@@ -70,6 +76,11 @@ export function MatchForm({
             venueType: initialData?.venueType || "home",
             country: initialData?.country || "India",
             teamRepresented: initialData?.teamRepresented || "",
+            result: initialData?.result,
+            resultMargin: initialData?.resultMargin || "",
+            tossWinner: initialData?.tossWinner || "",
+            tossDecision: initialData?.tossDecision,
+            matchType: initialData?.matchType,
             pitchType: initialData?.pitchType || "flat",
             weatherCondition: initialData?.weatherCondition || "sunny",
             notes: initialData?.notes || "",
@@ -274,6 +285,81 @@ export function MatchForm({
                                 {WEATHER_CONDITIONS.map((w) => (
                                     <option key={w} value={w} className="bg-gray-900">
                                         {w.charAt(0).toUpperCase() + w.slice(1)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Match Result & Toss Section */}
+                <div className="space-y-6 md:col-span-2">
+                    <div className="flex items-center gap-2 pb-2 border-b border-white/5">
+                        <Trophy size={16} className="text-yellow-400" />
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">Result & Toss</h3>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-300">Match Result</label>
+                            <select
+                                {...register("result")}
+                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer"
+                            >
+                                <option value="" className="bg-gray-900">Not Set</option>
+                                {MATCH_RESULTS.map((r) => (
+                                    <option key={r} value={r} className="bg-gray-900">
+                                        {r.charAt(0).toUpperCase() + r.slice(1).replace("_", " ")}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-300">Result Margin</label>
+                            <input
+                                {...register("resultMargin")}
+                                placeholder="e.g. by 5 wickets"
+                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-300">Toss Winner</label>
+                            <input
+                                {...register("tossWinner")}
+                                placeholder="e.g. India"
+                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-300">Toss Decision</label>
+                            <select
+                                {...register("tossDecision")}
+                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer"
+                            >
+                                <option value="" className="bg-gray-900">Not Set</option>
+                                {TOSS_DECISIONS.map((t) => (
+                                    <option key={t} value={t} className="bg-gray-900">
+                                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-300">Match Type</label>
+                            <select
+                                {...register("matchType")}
+                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer"
+                            >
+                                <option value="" className="bg-gray-900">Not Set</option>
+                                {MATCH_TYPE_OPTIONS.map((m) => (
+                                    <option key={m} value={m} className="bg-gray-900">
+                                        {m.charAt(0).toUpperCase() + m.slice(1)}
                                     </option>
                                 ))}
                             </select>

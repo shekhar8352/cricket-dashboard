@@ -19,7 +19,7 @@ export async function getAllSeries(filters?: {
     if (filters?.status) query.status = filters.status;
 
     const series = await Series.find(query)
-        .sort({ startDate: -1 })
+        .sort({ startDate: 1 })
         .lean<any[]>();
 
     return series.map((s) => ({
