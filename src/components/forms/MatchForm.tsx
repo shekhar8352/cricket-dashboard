@@ -31,6 +31,8 @@ const matchSchema = z.object({
     level: z.enum(MATCH_LEVELS),
     venue: z.string().min(1, "Venue is required"),
     city: z.string().min(1, "City is required"),
+    country: z.string().min(1, "Country is required"),
+    teamRepresented: z.string().min(1, "Team represented is required"),
     venueType: z.enum(VENUE_TYPES).optional(),
     seriesId: z.string().optional(),
     result: z.enum(MATCH_RESULTS).optional(),
@@ -66,6 +68,8 @@ export function MatchForm({
             format: initialData?.format || "T20",
             level: initialData?.level || "club",
             venueType: initialData?.venueType || "home",
+            country: initialData?.country || "India",
+            teamRepresented: initialData?.teamRepresented || "",
             pitchType: initialData?.pitchType || "flat",
             weatherCondition: initialData?.weatherCondition || "sunny",
             notes: initialData?.notes || "",
@@ -186,6 +190,38 @@ export function MatchForm({
                                     errors.city ? "border-red-500/50" : "border-white/10"
                                 )}
                             />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-300">Country</label>
+                                <input
+                                    {...register("country")}
+                                    placeholder="e.g. India"
+                                    className={cn(
+                                        "w-full px-4 py-3 bg-white/5 border rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50",
+                                        errors.country ? "border-red-500/50" : "border-white/10"
+                                    )}
+                                />
+                                {errors.country && (
+                                    <p className="text-xs text-red-400 font-medium">{errors.country.message}</p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-300">Team Represented</label>
+                                <input
+                                    {...register("teamRepresented")}
+                                    placeholder="e.g. Uttar Pradesh"
+                                    className={cn(
+                                        "w-full px-4 py-3 bg-white/5 border rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50",
+                                        errors.teamRepresented ? "border-red-500/50" : "border-white/10"
+                                    )}
+                                />
+                                {errors.teamRepresented && (
+                                    <p className="text-xs text-red-400 font-medium">{errors.teamRepresented.message}</p>
+                                )}
+                            </div>
                         </div>
 
                         <div className="space-y-2">

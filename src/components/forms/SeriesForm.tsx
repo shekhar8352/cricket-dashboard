@@ -188,7 +188,7 @@ export function SeriesForm({ initialData, onSubmit, isLoading }: SeriesFormProps
                                 <input
                                     {...register("teams", {
                                         required: "Teams are required",
-                                        setValueAs: (v) => (typeof v === "string" ? v.split(",").map((t) => t.trim()) : v),
+                                        setValueAs: (v) => (typeof v === "string" ? v.split(",").map((t) => t.trim()).filter(Boolean) : v),
                                     })}
                                     placeholder="Team A, Team B..."
                                     className={cn(

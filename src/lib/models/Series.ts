@@ -43,7 +43,7 @@ const SeriesSchema = new Schema<ISeries>(
         startDate: { type: Date, required: true },
         endDate: { type: Date },
         hostCountry: { type: String, required: true },
-        teams: [{ type: String, required: true }],
+        teams: [{ type: String, required: true, trim: true }],
         totalMatches: { type: Number, required: true, min: 1 },
         status: {
             type: String,
