@@ -47,6 +47,7 @@ export interface SeriesFormData {
     totalMatches: number;
     status?: SeriesStatus;
     winner?: string;
+    notes?: string;
     tournamentStructure?: {
         hasGroupStage: boolean;
         hasKnockout: boolean;
@@ -67,6 +68,7 @@ export interface SeriesListItem {
     totalMatches: number;
     status: SeriesStatus;
     winner?: string;
+    notes?: string;
 }
 
 // ============================================
@@ -91,6 +93,7 @@ export interface MatchFormData {
     tossWinner?: string;
     tossDecision?: "bat" | "bowl";
     matchType?: MatchTypeOption;
+    notes?: string;
 }
 
 export interface MatchListItem {
@@ -111,6 +114,7 @@ export interface MatchListItem {
     hasPerformance?: boolean;
     weatherCondition?: WeatherCondition;
     pitchType?: PitchType;
+    notes?: string;
 }
 
 export interface MatchFilters {

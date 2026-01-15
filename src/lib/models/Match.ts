@@ -18,6 +18,7 @@ export interface IMatch extends Document {
     tossWinner?: string;
     tossDecision?: "bat" | "bowl";
     matchType?: "group" | "knockout" | "final" | "regular";
+    notes?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -67,6 +68,7 @@ const MatchSchema = new Schema<IMatch>(
             type: String,
             enum: ["group", "knockout", "final", "regular"],
         },
+        notes: { type: String },
     },
     { timestamps: true }
 );

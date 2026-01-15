@@ -48,6 +48,7 @@ export function SeriesForm({ initialData, onSubmit, isLoading }: SeriesFormProps
             teams: initialData?.teams || [],
             totalMatches: initialData?.totalMatches || 1,
             status: initialData?.status || "upcoming",
+            notes: initialData?.notes || "",
         },
     });
 
@@ -215,6 +216,26 @@ export function SeriesForm({ initialData, onSubmit, isLoading }: SeriesFormProps
                         </div>
                     </div>
                 </div>
+
+                {/* Additional Info Section */}
+                <div className="md:col-span-2 space-y-6">
+                    <div className="flex items-center gap-2 pb-2 border-b border-white/5">
+                        <Activity size={16} className="text-purple-400" />
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">Additional Information</h3>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-300">Notes (Optional)</label>
+                            <textarea
+                                {...register("notes")}
+                                placeholder="Add any additional notes about the series..."
+                                rows={4}
+                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none"
+                            />
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -237,6 +258,6 @@ export function SeriesForm({ initialData, onSubmit, isLoading }: SeriesFormProps
                     )}
                 </button>
             </div>
-        </form>
+        </form >
     );
 }

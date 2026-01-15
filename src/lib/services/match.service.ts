@@ -65,6 +65,7 @@ export async function getAllMatches(
         result: m.result,
         resultMargin: m.resultMargin,
         hasPerformance: performanceMatchIds.has(m._id.toString()),
+        notes: m.notes,
     }));
 }
 
@@ -100,6 +101,7 @@ export async function getMatchById(id: string): Promise<MatchListItem | null> {
         result: match.result,
         resultMargin: match.resultMargin,
         hasPerformance: !!performance,
+        notes: match.notes,
     };
 }
 
@@ -144,6 +146,7 @@ export async function createMatch(data: MatchFormData): Promise<MatchListItem> {
         result: match.result,
         resultMargin: match.resultMargin,
         hasPerformance: false,
+        notes: match.notes,
     };
 }
 
@@ -186,6 +189,7 @@ export async function updateMatch(
         result: match.result,
         resultMargin: match.resultMargin,
         hasPerformance: !!performance,
+        notes: match.notes,
     };
 }
 

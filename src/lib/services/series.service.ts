@@ -35,6 +35,7 @@ export async function getAllSeries(filters?: {
         totalMatches: s.totalMatches,
         status: s.status,
         winner: s.winner,
+        notes: s.notes,
     }));
 }
 
@@ -61,6 +62,7 @@ export async function getSeriesById(id: string): Promise<SeriesListItem | null> 
         totalMatches: series.totalMatches,
         status: series.status,
         winner: series.winner,
+        notes: series.notes,
     };
 }
 
@@ -89,6 +91,7 @@ export async function createSeries(data: SeriesFormData): Promise<SeriesListItem
         totalMatches: series.totalMatches,
         status: series.status,
         winner: series.winner,
+        notes: series.notes,
     };
 }
 
@@ -122,6 +125,7 @@ export async function updateSeries(
         totalMatches: series.totalMatches,
         status: series.status,
         winner: series.winner,
+        notes: series.notes,
     };
 }
 

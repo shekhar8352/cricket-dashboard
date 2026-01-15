@@ -17,6 +17,7 @@ export interface ISeries extends Document {
         hasKnockout: boolean;
         groups?: { name: string; teams: string[] }[];
     };
+    notes?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -60,6 +61,7 @@ const SeriesSchema = new Schema<ISeries>(
                 },
             ],
         },
+        notes: { type: String },
     },
     { timestamps: true }
 );
