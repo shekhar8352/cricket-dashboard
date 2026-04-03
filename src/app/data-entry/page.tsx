@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
+import { PageHeader } from "@/components/ui/SectionHeader";
 import { getAllSeries } from "@/lib/services/series.service";
 import { getAllMatches } from "@/lib/services/match.service";
 import { formatDate } from "@/lib/utils";
@@ -15,16 +16,16 @@ export default async function DataEntryPage() {
 
     return (
         <div className="space-y-8">
-            {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold text-white">Data Entry</h1>
-                <p className="text-gray-400 mt-1">Add and manage your match performances</p>
-            </div>
+            <PageHeader
+                eyebrow="Input"
+                title="Data entry"
+                description="Create series, log matches, and attach performances from one hub."
+            />
 
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Link href="/data-entry/series">
-                    <Card className="hover:border-blue-600 transition-colors cursor-pointer h-full">
+                    <Card className="h-full cursor-pointer transition-colors hover:border-primary/40">
                         <CardHeader>
                             <div className="text-4xl mb-2">📋</div>
                             <CardTitle>Manage Series</CardTitle>
@@ -33,15 +34,13 @@ export default async function DataEntryPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-blue-400 font-medium">
-                                {series.length} series →
-                            </p>
+                            <p className="text-sm font-semibold text-primary">{series.length} series →</p>
                         </CardContent>
                     </Card>
                 </Link>
 
                 <Link href="/data-entry/match">
-                    <Card className="hover:border-blue-600 transition-colors cursor-pointer h-full">
+                    <Card className="h-full cursor-pointer transition-colors hover:border-primary/40">
                         <CardHeader>
                             <div className="text-4xl mb-2">🏏</div>
                             <CardTitle>Add Match</CardTitle>
@@ -50,14 +49,12 @@ export default async function DataEntryPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-blue-400 font-medium">
-                                {matches.length} matches total →
-                            </p>
+                            <p className="text-sm font-semibold text-primary">{matches.length} matches →</p>
                         </CardContent>
                     </Card>
                 </Link>
 
-                <Card className="bg-gradient-to-br from-blue-950 to-gray-900 border-blue-800">
+                <Card variant="highlight" className="border-primary/20">
                     <CardHeader>
                         <div className="text-4xl mb-2">📊</div>
                         <CardTitle>Quick Stats</CardTitle>

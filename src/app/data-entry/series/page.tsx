@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Pagination, usePagination } from "@/components/ui/Pagination";
 import { SeriesForm } from "@/components/forms";
@@ -20,7 +21,7 @@ import {
     FileEdit
 } from "lucide-react";
 
-export default function SeriesPage() {
+function SeriesPageInner() {
     const [series, setSeries] = useState<SeriesListItem[]>([]);
     const { 
         currentPage, 
@@ -36,11 +37,26 @@ export default function SeriesPage() {
     const [showForm, setShowForm] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [editingSeries, setEditingSeries] = useState<SeriesListItem | null>(null);
+    const searchParams = useSearchParams();
+    const editIdFromUrl = searchParams.get("id");
+    const openedEditFromUrl = useRef(false);
 
     // Fetch series
     useEffect(() => {
         fetchSeries();
     }, []);
+
+    // Deep link from read-only series detail: /data-entry/series?id=...
+    useEffect(() => {
+        if (openedEditFromUrl.current || !editIdFromUrl || isLoading || series.length === 0) return;
+        const found = series.find((s) => s._id === editIdFromUrl);
+        if (found) {
+            openedEditFromUrl.current = true;
+            setEditingSeries(found);
+            setShowForm(true);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+    }, [editIdFromUrl, isLoading, series]);
 
     const fetchSeries = async () => {
         try {
@@ -296,5 +312,20 @@ export default function SeriesPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function SeriesPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 py-20">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-emerald-500/20 border-t-emerald-500" />
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Loading…</p>
+                </div>
+            }
+        >
+            <SeriesPageInner />
+        </Suspense>
     );
 }

@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-    variant?: "default" | "stat" | "highlight";
+    variant?: "default" | "stat" | "highlight" | "chart" | "panel";
 }
 
 export function Card({
@@ -14,8 +14,12 @@ export function Card({
     return (
         <div
             className={cn(
-                "glass-card rounded-2xl p-6",
-                variant === "highlight" && "border-blue-500/30 bg-blue-600/5",
+                "rounded-xl border border-border/80 bg-card/80 p-6 shadow-sm shadow-black/10",
+                variant === "highlight" && "border-primary/25 bg-primary/5",
+                variant === "stat" && "p-5",
+                variant === "chart" &&
+                    "surface-chart p-4 sm:p-5 shadow-none border-border/50 bg-card/30",
+                variant === "panel" && "surface-panel",
                 className
             )}
             {...props}
@@ -31,7 +35,7 @@ export function CardHeader({
     ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
     return (
-        <div className={cn("flex flex-col space-y-1.5", className)} {...props}>
+        <div className={cn("flex flex-col space-y-1", className)} {...props}>
             {children}
         </div>
     );
@@ -44,7 +48,10 @@ export function CardTitle({
 }: React.HTMLAttributes<HTMLHeadingElement>) {
     return (
         <h3
-            className={cn("text-lg font-bold text-white tracking-tight", className)}
+            className={cn(
+                "text-sm font-semibold tracking-tight text-foreground",
+                className
+            )}
             {...props}
         >
             {children}
@@ -58,7 +65,7 @@ export function CardDescription({
     ...props
 }: React.HTMLAttributes<HTMLParagraphElement>) {
     return (
-        <p className={cn("text-sm text-gray-400 font-medium", className)} {...props}>
+        <p className={cn("text-sm text-muted-foreground leading-relaxed", className)} {...props}>
             {children}
         </p>
     );
@@ -76,7 +83,6 @@ export function CardContent({
     );
 }
 
-// Stat Card Component
 interface StatCardProps {
     title: string;
     value: string | number;
@@ -95,42 +101,43 @@ export function StatCard({
     className,
 }: StatCardProps) {
     return (
-        <Card variant="stat" className={cn("relative group overflow-hidden", className)}>
-            <div className="absolute -right-4 -top-4 text-6xl opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500 pointer-events-none grayscale">
+        <Card variant="stat" className={cn("relative overflow-hidden group", className)}>
+            <div className="absolute -right-3 -top-3 text-5xl opacity-[0.04] pointer-events-none select-none">
                 {icon}
             </div>
 
-            <div className="relative">
-                <div className="inline-flex items-center gap-2 mb-3">
-                    <span className="text-xl">{icon}</span>
-                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{title}</p>
+            <div className="relative space-y-3">
+                <div className="flex items-center gap-2">
+                    {icon ? <span className="text-lg leading-none" aria-hidden>{icon}</span> : null}
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        {title}
+                    </p>
                 </div>
 
-                <p className="text-3xl font-black text-white tracking-tight leading-none mb-1">
+                <p className="font-mono text-2xl font-semibold tabular-nums tracking-tight text-foreground sm:text-[1.65rem]">
                     {value}
                 </p>
 
                 {subtitle && (
-                    <p className="text-xs font-medium text-blue-400">{subtitle}</p>
+                    <p className="text-xs text-muted-foreground">{subtitle}</p>
                 )}
 
                 {trend && (
                     <div
                         className={cn(
-                            "mt-3 inline-flex items-center text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full",
+                            "inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border",
                             trend.isPositive
-                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                                : "bg-red-500/10 text-red-400 border border-red-500/20"
+                                ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-400"
+                                : "border-red-500/25 bg-red-500/10 text-red-400"
                         )}
                     >
                         <span>{trend.isPositive ? "↑" : "↓"}</span>
-                        <span className="ml-1">{Math.abs(trend.value)}%</span>
+                        <span className="ml-1 tabular-nums">{Math.abs(trend.value)}%</span>
                     </div>
                 )}
             </div>
 
-            {/* Decoration */}
-            <div className="absolute bottom-0 left-0 h-1 w-0 bg-blue-600 group-hover:w-full transition-all duration-500" />
+            <div className="absolute bottom-0 left-0 h-px w-0 bg-primary/60 group-hover:w-full transition-all duration-500" />
         </Card>
     );
 }

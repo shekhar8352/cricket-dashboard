@@ -72,15 +72,15 @@ export function Pagination({
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
             {/* Items per page selector */}
             {showItemsPerPage && onItemsPerPageChange && (
-                <div className="flex items-center gap-2 text-sm text-gray-400">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>Show</span>
                     <select
                         value={itemsPerPage}
                         onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
-                        className="px-2 py-1 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                        className="h-9 cursor-pointer rounded-md border border-border bg-background px-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring appearance-none"
                     >
                         {itemsPerPageOptions.map((option) => (
-                            <option key={option} value={option} className="bg-gray-950">
+                            <option key={option} value={option} className="bg-card">
                                 {option}
                             </option>
                         ))}
@@ -90,10 +90,11 @@ export function Pagination({
             )}
 
             {/* Page info */}
-            <div className="text-sm text-gray-400">
-                Showing <span className="text-white font-medium">{startItem}</span> to{" "}
-                <span className="text-white font-medium">{endItem}</span> of{" "}
-                <span className="text-white font-medium">{totalItems}</span> items
+            <div className="text-sm text-muted-foreground">
+                Showing{" "}
+                <span className="font-mono font-medium tabular-nums text-foreground">{startItem}</span> to{" "}
+                <span className="font-mono font-medium tabular-nums text-foreground">{endItem}</span> of{" "}
+                <span className="font-mono font-medium tabular-nums text-foreground">{totalItems}</span>
             </div>
 
             {/* Pagination controls */}
@@ -102,7 +103,7 @@ export function Pagination({
                 <button
                     onClick={() => onPageChange(1)}
                     disabled={currentPage === 1}
-                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
                     title="First page"
                 >
                     <ChevronsLeft size={18} />
@@ -112,7 +113,7 @@ export function Pagination({
                 <button
                     onClick={() => onPageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
                     title="Previous page"
                 >
                     <ChevronLeft size={18} />
@@ -122,17 +123,17 @@ export function Pagination({
                 <div className="flex items-center gap-1 mx-2">
                     {getPageNumbers().map((page, index) =>
                         page === "ellipsis" ? (
-                            <span key={`ellipsis-${index}`} className="px-2 text-gray-500">
+                            <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
                                 ...
                             </span>
                         ) : (
                             <button
                                 key={page}
                                 onClick={() => onPageChange(page)}
-                                className={`min-w-[36px] h-9 px-3 rounded-lg font-medium text-sm transition-all ${
+                                className={`min-h-9 min-w-9 rounded-md px-3 text-sm font-medium transition-colors ${
                                     currentPage === page
-                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                                        : "text-gray-400 hover:text-white hover:bg-white/10"
+                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                 }`}
                             >
                                 {page}
@@ -145,7 +146,7 @@ export function Pagination({
                 <button
                     onClick={() => onPageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
                     title="Next page"
                 >
                     <ChevronRight size={18} />
@@ -155,7 +156,7 @@ export function Pagination({
                 <button
                     onClick={() => onPageChange(totalPages)}
                     disabled={currentPage === totalPages}
-                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
                     title="Last page"
                 >
                     <ChevronsRight size={18} />
