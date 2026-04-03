@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { StatCard, Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { PageHeader, SectionHeader } from "@/components/ui/SectionHeader";
 import {
   RunsOverTimeChart,
   FormatBreakdownChart,
@@ -21,56 +22,50 @@ async function DashboardContent() {
   const hasData = summary.matches > 0;
 
   return (
-    <div className="space-y-12 pb-12">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-widest">
-            Welcome Back
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter">
-            {PLAYER.name}
-          </h1>
-          <p className="text-gray-400 font-medium max-w-md">
-            Track your journey, analyze performance, and master your game with precision analytics.
-          </p>
-        </div>
-        <Link
-          href="/data-entry"
-          className="group inline-flex items-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)] active:scale-95"
-        >
-          <PlusCircle size={20} />
-          Add Performance
-        </Link>
-      </div>
+    <div className="space-y-10 pb-12">
+      <PageHeader
+        eyebrow="Dashboard"
+        title={PLAYER.name}
+        description="Track performances, spot trends, and keep your career stats in one calm workspace."
+        action={
+          <Link
+            href="/data-entry"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[0.98]"
+          >
+            <PlusCircle size={20} strokeWidth={1.75} aria-hidden />
+            Add performance
+          </Link>
+        }
+      />
 
       {!hasData ? (
-        <Card className="flex flex-col items-center justify-center p-12 text-center animate-float">
-          <div className="w-20 h-20 rounded-3xl bg-blue-600/10 flex items-center justify-center text-4xl mb-6 border border-blue-500/20">
+        <Card className="flex flex-col items-center justify-center p-10 text-center sm:p-12">
+          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-card text-3xl">
             🏏
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">
-            Ready to Start Your Career Analysis?
+          <h2 className="mb-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            Start your career log
           </h2>
-          <p className="text-gray-400 mb-8 max-w-sm mx-auto">
-            Your dashboard is currently empty. Add your first match performance to unlock detailed insights and visualizations.
+          <p className="mb-8 max-w-sm text-muted-foreground">
+            Add a match and performance to unlock charts, filters, and opponent breakdowns.
           </p>
           <Link
             href="/data-entry"
-            className="flex items-center gap-2 px-6 py-3 bg-white text-gray-950 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
           >
-            Add First Match
-            <ArrowRight size={18} />
+            Add first match
+            <ArrowRight size={18} strokeWidth={1.75} aria-hidden />
           </Link>
         </Card>
       ) : (
         <>
-          {/* Main Stats Grid */}
-          <div className="space-y-6">
-            <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400/80 px-1">
-              Primary Summary
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+          <div className="space-y-4">
+            <SectionHeader
+              eyebrow="Summary"
+              title="Career snapshot"
+              description="Numbers pulled from every performance you have logged."
+            />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 sm:gap-5">
               <StatCard
                 title="Matches"
                 value={summary.matches}
@@ -112,8 +107,7 @@ async function DashboardContent() {
             </div>
           </div>
 
-          {/* Secondary Stats Strip */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 px-1">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-8 sm:gap-4">
             {[
               { label: "50s", value: summary.fifties },
               { label: "100s", value: summary.centuries },
@@ -124,66 +118,74 @@ async function DashboardContent() {
               { label: "NO", value: summary.notOuts },
               { label: "Win %", value: `${summary.winPercentage}%` },
             ].map((stat, i) => (
-              <div key={i} className="glass-card p-4 rounded-xl flex flex-col items-center justify-center text-center">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">{stat.label}</span>
-                <span className="text-xl font-black text-white">{stat.value}</span>
+              <div
+                key={i}
+                className="glass-card flex flex-col items-center justify-center rounded-lg px-2 py-3.5 text-center sm:py-4"
+              >
+                <span className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {stat.label}
+                </span>
+                <span className="font-mono text-lg font-semibold tabular-nums text-foreground">
+                  {stat.value}
+                </span>
               </div>
             ))}
           </div>
 
-          {/* Charts Section */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400/80 px-1">Performance Trends</h2>
+          <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
+            <div className="space-y-3">
+              <SectionHeader
+                title="Performance trend"
+                description="Runs by match with cumulative total on the secondary axis."
+              />
               {trends.length > 0 && <RunsOverTimeChart data={trends} />}
             </div>
-            <div className="space-y-4">
-              <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400/80 px-1">Format Breakdown</h2>
+            <div className="space-y-3">
+              <SectionHeader title="Runs by format" description="Share of runs across formats you play." />
               {formats.length > 0 && <FormatBreakdownChart data={formats} metric="runs" />}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400/80 px-1">Bowling Efficiency</h2>
+          <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
+            <div className="space-y-3">
+              <SectionHeader title="Wickets by format" description="Where your bowling shows up most." />
               {formats.length > 0 && <FormatBreakdownChart data={formats} metric="wickets" />}
             </div>
-            <div className="space-y-4">
-              <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400/80 px-1">Recent Form</h2>
+            <div className="space-y-3">
+              <SectionHeader title="Recent form" description="Last ten innings scores at a glance." />
               {trends.length > 0 && <RecentFormChart data={trends} limit={10} />}
             </div>
           </div>
 
-          {/* Format Table */}
           {formats.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400/80 px-1">Format-wise Comparison</h2>
-              <Card className="p-0 overflow-hidden">
+            <div className="space-y-3">
+              <SectionHeader title="Format comparison" description="Side-by-side batting and bowling columns." />
+              <Card className="overflow-hidden p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-white/5 border-b border-white/10">
-                        <th className="text-left py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Format</th>
-                        <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Mat</th>
-                        <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Runs</th>
-                        <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Avg</th>
-                        <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">SR</th>
-                        <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">50/100</th>
-                        <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Wkts</th>
-                        <th className="text-center py-4 px-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">Econ</th>
+                      <tr className="border-b border-border bg-muted/30">
+                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-6">Format</th>
+                        <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-6">Mat</th>
+                        <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-6">Runs</th>
+                        <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-6">Avg</th>
+                        <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-6">SR</th>
+                        <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-6">50/100</th>
+                        <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-6">Wkts</th>
+                        <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-6">Econ</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-border/60">
                       {formats.map((f) => (
-                        <tr key={f.format} className="hover:bg-white/[0.02] transition-colors">
-                          <td className="py-4 px-6 text-white font-bold">{f.format}</td>
-                          <td className="text-center py-4 px-6 text-gray-300 font-medium">{f.matches}</td>
-                          <td className="text-center py-4 px-6 font-black text-blue-400">{f.runs}</td>
-                          <td className="text-center py-4 px-6 text-gray-300 font-medium">{f.battingAverage ?? "-"}</td>
-                          <td className="text-center py-4 px-6 text-gray-300 font-medium">{f.strikeRate}</td>
-                          <td className="text-center py-4 px-6 text-gray-300 font-medium">{f.fifties}/{f.centuries}</td>
-                          <td className="text-center py-4 px-6 font-black text-emerald-400">{f.wickets}</td>
-                          <td className="text-center py-4 px-6 text-gray-300 font-medium">{f.economy}</td>
+                        <tr key={f.format} className="transition-colors hover:bg-muted/20">
+                          <td className="px-4 py-3.5 font-semibold text-foreground sm:px-6">{f.format}</td>
+                          <td className="px-4 py-3.5 text-center font-mono tabular-nums text-muted-foreground sm:px-6">{f.matches}</td>
+                          <td className="px-4 py-3.5 text-center font-mono font-semibold tabular-nums text-primary sm:px-6">{f.runs}</td>
+                          <td className="px-4 py-3.5 text-center font-mono tabular-nums text-muted-foreground sm:px-6">{f.battingAverage ?? "-"}</td>
+                          <td className="px-4 py-3.5 text-center font-mono tabular-nums text-muted-foreground sm:px-6">{f.strikeRate}</td>
+                          <td className="px-4 py-3.5 text-center font-mono tabular-nums text-muted-foreground sm:px-6">{f.fifties}/{f.centuries}</td>
+                          <td className="px-4 py-3.5 text-center font-mono font-semibold tabular-nums text-accent-foreground sm:px-6">{f.wickets}</td>
+                          <td className="px-4 py-3.5 text-center font-mono tabular-nums text-muted-foreground sm:px-6">{f.economy}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -202,9 +204,13 @@ export default function HomePage() {
   return (
     <Suspense
       fallback={
-        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500/20 border-t-blue-500"></div>
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-500 animate-pulse">Analyzing Statistics...</p>
+        <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
+          <div
+            className="h-10 w-10 animate-spin rounded-full border-2 border-border border-t-primary"
+            role="status"
+            aria-label="Loading"
+          />
+          <p className="text-xs font-medium text-muted-foreground">Loading dashboard…</p>
         </div>
       }
     >

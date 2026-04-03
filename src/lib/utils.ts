@@ -89,6 +89,17 @@ export function formatDate(date: Date | string): string {
     });
 }
 
+/** Longer fixture-style date with weekday (detail views). */
+export function formatDateLong(date: Date | string): string {
+    const d = new Date(date);
+    return d.toLocaleDateString("en-IN", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+    });
+}
+
 /**
  * Format date for input fields (YYYY-MM-DD)
  */

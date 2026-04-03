@@ -117,6 +117,62 @@ export interface MatchListItem {
     notes?: string;
 }
 
+/** Read-only innings slice for match detail (batting or bowling). */
+export interface PerformanceInningsRead {
+    didNotBat?: boolean;
+    didNotBowl?: boolean;
+    runs?: number;
+    ballsFaced?: number;
+    fours?: number;
+    sixes?: number;
+    dismissalType?: string;
+    dismissalBowler?: string;
+    dismissalFielder?: string;
+    overs?: number;
+    maidens?: number;
+    runsConceded?: number;
+    wickets?: number;
+    wides?: number;
+    noBalls?: number;
+    economy?: number;
+    strikeRate?: number;
+}
+
+export interface PerformanceReadOnly {
+    isCaptain: boolean;
+    isWicketkeeper: boolean;
+    matchRuns: number;
+    matchWickets: number;
+    matchBallsFaced: number;
+    matchOvers: number;
+    fielding: {
+        catches: number;
+        runOuts: number;
+        stumpings: number;
+        totalDismissals: number;
+    };
+    batting?: PerformanceInningsRead;
+    bowling?: PerformanceInningsRead;
+    firstInningsBatting?: PerformanceInningsRead;
+    secondInningsBatting?: PerformanceInningsRead;
+    firstInningsBowling?: PerformanceInningsRead;
+    secondInningsBowling?: PerformanceInningsRead;
+}
+
+/** Full match payload for read-only detail (GET /api/matches/[id]). */
+export interface MatchReadOnlyDetail extends MatchListItem {
+    tossWinner?: string;
+    tossDecision?: "bat" | "bowl";
+    matchType?: MatchTypeOption;
+    performance: PerformanceReadOnly | null;
+}
+
+export interface SeriesReadOnlyDetail extends SeriesListItem {
+    tournamentStructure?: SeriesFormData["tournamentStructure"];
+    /** Matches in DB linked to this series. */
+    matchesLoggedCount: number;
+}
+
 export interface MatchFilters {
     format?: MatchFormat;
     level?: MatchLevel;
@@ -269,6 +325,46 @@ export interface AnalyticsFilters {
     endDate?: string;
     venue?: string;
     venueType?: VenueType;
+    homeAway?: string;
+}
+
+/** Matches in filter vs performances / series tagging — data completeness. */
+export interface RecordCoverageStats {
+    totalMatches: number;
+    withPerformance: number;
+    withoutPerformance: number;
+    pctWithPerformance: number;
+    withSeries: number;
+    pctSeriesTagged: number;
+}
+
+export interface VenueTypeOutcomeRow {
+    venueType: string;
+    matches: number;
+    won: number;
+    lost: number;
+    other: number;
+}
+
+export interface MonthlyMatchVolume {
+    key: string;
+    label: string;
+    count: number;
+}
+
+export interface DismissalBreakdownItem {
+    type: string;
+    count: number;
+}
+
+/** Toss vs match result (decisive won/lost only); excludes rows missing toss/side or non-decisive results. */
+export interface TossCorrelationStats {
+    wonTossWonMatch: number;
+    wonTossLostMatch: number;
+    lostTossWonMatch: number;
+    lostTossLostMatch: number;
+    excludedNoTossOrSide: number;
+    excludedNonDecisiveResult: number;
 }
 
 // ============================================
