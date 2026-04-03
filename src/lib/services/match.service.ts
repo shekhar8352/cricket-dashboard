@@ -2,7 +2,14 @@ import { connectDB } from "@/database/mongoose";
 import Match, { IMatch } from "@/lib/models/Match";
 import Performance from "@/lib/models/Performance";
 import "@/lib/models/Series"; // Ensure Series model is registered
-import { MatchFormData, MatchListItem, MatchFilters } from "@/types";
+import {
+    MatchFormData,
+    MatchListItem,
+    MatchFilters,
+    MatchReadOnlyDetail,
+    PerformanceReadOnly,
+    PerformanceInningsRead,
+} from "@/types";
 import mongoose from "mongoose";
 
 /**
@@ -101,8 +108,103 @@ export async function getMatchById(id: string): Promise<MatchListItem | null> {
         result: match.result,
         resultMargin: match.resultMargin,
         hasPerformance: !!performance,
+        pitchType: match.pitchType,
+        weatherCondition: match.weatherCondition,
         notes: match.notes,
     };
+}
+
+function inningsBattingRead(b: Record<string, unknown> | undefined): PerformanceInningsRead | undefined {
+    if (!b) return undefined;
+    return {
+        didNotBat: b.didNotBat as boolean | undefined,
+        runs: b.runs as number | undefined,
+        ballsFaced: b.ballsFaced as number | undefined,
+        fours: b.fours as number | undefined,
+        sixes: b.sixes as number | undefined,
+        dismissalType: b.dismissalType as string | undefined,
+        dismissalBowler: b.dismissalBowler as string | undefined,
+        dismissalFielder: b.dismissalFielder as string | undefined,
+        strikeRate: b.strikeRate as number | undefined,
+    };
+}
+
+function inningsBowlingRead(b: Record<string, unknown> | undefined): PerformanceInningsRead | undefined {
+    if (!b) return undefined;
+    return {
+        didNotBowl: b.didNotBowl as boolean | undefined,
+        overs: b.overs as number | undefined,
+        maidens: b.maidens as number | undefined,
+        runsConceded: b.runsConceded as number | undefined,
+        wickets: b.wickets as number | undefined,
+        wides: b.wides as number | undefined,
+        noBalls: b.noBalls as number | undefined,
+        economy: b.economy as number | undefined,
+    };
+}
+
+function performanceToRead(p: Record<string, unknown>): PerformanceReadOnly {
+    const fielding = (p.fielding as Record<string, number>) || {};
+    return {
+        isCaptain: !!p.isCaptain,
+        isWicketkeeper: !!p.isWicketkeeper,
+        matchRuns: Number(p.matchRuns) || 0,
+        matchWickets: Number(p.matchWickets) || 0,
+        matchBallsFaced: Number(p.matchBallsFaced) || 0,
+        matchOvers: Number(p.matchOvers) || 0,
+        fielding: {
+            catches: fielding.catches ?? 0,
+            runOuts: fielding.runOuts ?? 0,
+            stumpings: fielding.stumpings ?? 0,
+            totalDismissals: fielding.totalDismissals ?? 0,
+        },
+        batting: inningsBattingRead(p.batting as Record<string, unknown>),
+        bowling: inningsBowlingRead(p.bowling as Record<string, unknown>),
+        firstInningsBatting: inningsBattingRead(p.firstInningsBatting as Record<string, unknown>),
+        secondInningsBatting: inningsBattingRead(p.secondInningsBatting as Record<string, unknown>),
+        firstInningsBowling: inningsBowlingRead(p.firstInningsBowling as Record<string, unknown>),
+        secondInningsBowling: inningsBowlingRead(p.secondInningsBowling as Record<string, unknown>),
+    };
+}
+
+/**
+ * Match + optional performance for read-only detail views.
+ */
+export async function getMatchReadOnlyDetail(id: string): Promise<MatchReadOnlyDetail | null> {
+    await connectDB();
+
+    const match = await Match.findById(id).populate("series", "name").lean<any>();
+    if (!match) return null;
+
+    const performanceDoc = await Performance.findOne({ match: id }).lean<Record<string, unknown>>();
+
+    const base: MatchReadOnlyDetail = {
+        _id: match._id.toString(),
+        series: match.series
+            ? { _id: match.series._id.toString(), name: match.series.name }
+            : undefined,
+        format: match.format,
+        level: match.level,
+        date: match.date.toISOString(),
+        venue: match.venue,
+        city: match.city,
+        country: match.country,
+        opponent: match.opponent,
+        teamRepresented: match.teamRepresented,
+        venueType: match.venueType,
+        result: match.result,
+        resultMargin: match.resultMargin,
+        hasPerformance: !!performanceDoc,
+        pitchType: match.pitchType,
+        weatherCondition: match.weatherCondition,
+        notes: match.notes,
+        tossWinner: match.tossWinner,
+        tossDecision: match.tossDecision,
+        matchType: match.matchType,
+        performance: performanceDoc ? performanceToRead(performanceDoc) : null,
+    };
+
+    return base;
 }
 
 /**

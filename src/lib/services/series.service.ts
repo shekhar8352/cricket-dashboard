@@ -1,6 +1,7 @@
 import { connectDB } from "@/database/mongoose";
 import Series, { ISeries } from "@/lib/models/Series";
-import { SeriesFormData, SeriesListItem } from "@/types";
+import { SeriesFormData, SeriesListItem, SeriesReadOnlyDetail } from "@/types";
+import Match from "@/lib/models/Match";
 
 /**
  * Get all series with optional filters
@@ -63,6 +64,36 @@ export async function getSeriesById(id: string): Promise<SeriesListItem | null> 
         status: series.status,
         winner: series.winner,
         notes: series.notes,
+    };
+}
+
+/**
+ * Series + match count for read-only detail views.
+ */
+export async function getSeriesReadOnlyDetail(id: string): Promise<SeriesReadOnlyDetail | null> {
+    await connectDB();
+
+    const series = await Series.findById(id).lean<any>();
+    if (!series) return null;
+
+    const matchesLoggedCount = await Match.countDocuments({ series: id });
+
+    return {
+        _id: series._id.toString(),
+        name: series.name,
+        type: series.type,
+        format: series.format,
+        level: series.level,
+        startDate: series.startDate.toISOString(),
+        endDate: series.endDate?.toISOString(),
+        hostCountry: series.hostCountry,
+        teams: series.teams,
+        totalMatches: series.totalMatches,
+        status: series.status,
+        winner: series.winner,
+        notes: series.notes,
+        tournamentStructure: series.tournamentStructure,
+        matchesLoggedCount,
     };
 }
 

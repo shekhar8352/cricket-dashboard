@@ -8,6 +8,11 @@ import {
     OpponentStats,
     VenueStats,
     AnalyticsFilters,
+    RecordCoverageStats,
+    VenueTypeOutcomeRow,
+    MonthlyMatchVolume,
+    DismissalBreakdownItem,
+    TossCorrelationStats,
 } from "@/types";
 import { MatchFormat } from "@/lib/constants";
 import mongoose from "mongoose";
@@ -23,7 +28,9 @@ function buildMatchFilterQuery(filters?: AnalyticsFilters): Record<string, unkno
     if (filters?.opponent) query.opponent = { $regex: filters.opponent, $options: "i" };
     if (filters?.series) query.series = new mongoose.Types.ObjectId(filters.series);
     if (filters?.venue) query.venue = { $regex: filters.venue, $options: "i" };
-    if (filters?.homeAway) query.homeAway = filters.homeAway;
+    if (filters?.venueType) query.venueType = filters.venueType;
+    // Legacy query param name (matches `venueType` on Match)
+    if (filters?.homeAway) query.venueType = filters.homeAway as "home" | "away" | "neutral";
 
     if (filters?.startDate || filters?.endDate) {
         query.date = {};
@@ -42,10 +49,34 @@ function buildMatchFilterQuery(filters?: AnalyticsFilters): Record<string, unkno
  * Prefixes match filter keys for use after $unwind in aggregation
  */
 function buildPrefixedMatchFilter(matchFilter: Record<string, any>): Record<string, any> {
-    return Object.keys(matchFilter).reduce((acc, key) => {
-        acc[`matchData.${key}`] = matchFilter[key];
+    return Object.entries(matchFilter).reduce((acc, [key, value]) => {
+        if (value !== undefined) {
+            acc[`matchData.${key}`] = value;
+        }
         return acc;
     }, {} as Record<string, any>);
+}
+
+/** Resolves actual Mongo collection name (e.g. `matches`) for aggregation $lookup. */
+function performanceMatchLookupStage() {
+    return {
+        $lookup: {
+            from: Match.collection.name,
+            localField: "match",
+            foreignField: "_id",
+            as: "matchData",
+        },
+    };
+}
+
+/** Loose team name match for toss vs team represented (spacing / substring). */
+function userWonToss(tossWinner: string, teamRepresented: string): boolean {
+    const t = tossWinner.trim().toLowerCase().replace(/\s+/g, " ");
+    const u = teamRepresented.trim().toLowerCase().replace(/\s+/g, " ");
+    if (!t || !u) return false;
+    if (t === u) return true;
+    if (t.length >= 4 && u.length >= 4 && (t.includes(u) || u.includes(t))) return true;
+    return false;
 }
 
 /**
@@ -71,7 +102,7 @@ export async function getCareerSummary(
         { $match: { match: { $in: matchIds } } },
         {
             $lookup: {
-                from: "matches",
+                from: Match.collection.name,
                 localField: "match",
                 foreignField: "_id",
                 as: "matchData",
@@ -358,7 +389,7 @@ export async function getFormatBreakdown(
     const result = await Performance.aggregate([
         {
             $lookup: {
-                from: "matches",
+                from: Match.collection.name,
                 localField: "match",
                 foreignField: "_id",
                 as: "matchData",
@@ -464,7 +495,7 @@ export async function getTrendData(
     const result = await Performance.aggregate([
         {
             $lookup: {
-                from: "matches",
+                from: Match.collection.name,
                 localField: "match",
                 foreignField: "_id",
                 as: "matchData",
@@ -560,7 +591,7 @@ export async function getOpponentStats(
     const result = await Performance.aggregate([
         {
             $lookup: {
-                from: "matches",
+                from: Match.collection.name,
                 localField: "match",
                 foreignField: "_id",
                 as: "matchData",
@@ -632,7 +663,7 @@ export async function getVenueStats(
     const result = await Performance.aggregate([
         {
             $lookup: {
-                from: "matches",
+                from: Match.collection.name,
                 localField: "match",
                 foreignField: "_id",
                 as: "matchData",
@@ -675,9 +706,9 @@ export async function getVenueStats(
     ]);
 
     return result.map((r) => ({
-        venue: r._id.venue,
-        city: r._id.city,
-        country: r._id.country,
+        venue: r._id.venue || "Unknown venue",
+        city: r._id.city || "",
+        country: r._id.country || "",
         matches: r.matches,
         runs: r.runs,
         battingAverage:
@@ -688,6 +719,305 @@ export async function getVenueStats(
         bowlingAverage:
             r.wickets > 0 ? parseFloat((r.runsConceded / r.wickets).toFixed(2)) : null,
     }));
+}
+
+const VENUE_TYPE_ORDER = ["home", "away", "neutral", "unknown"] as const;
+
+/**
+ * Matches in filter vs performances logged — data completeness (north-star style for this product).
+ */
+export async function getRecordCoverageStats(
+    filters?: AnalyticsFilters
+): Promise<RecordCoverageStats> {
+    await connectDB();
+    const matchFilter = buildMatchFilterQuery(filters);
+    const matchDocs = await Match.find(matchFilter).select("_id series").lean<
+        { _id: mongoose.Types.ObjectId; series?: mongoose.Types.ObjectId }[]
+    >();
+    const totalMatches = matchDocs.length;
+    if (totalMatches === 0) {
+        return {
+            totalMatches: 0,
+            withPerformance: 0,
+            withoutPerformance: 0,
+            pctWithPerformance: 0,
+            withSeries: 0,
+            pctSeriesTagged: 0,
+        };
+    }
+    const ids = matchDocs.map((m) => m._id);
+    const withPerformance = await Performance.countDocuments({ match: { $in: ids } });
+    const withSeries = matchDocs.filter((m) => m.series).length;
+    return {
+        totalMatches,
+        withPerformance,
+        withoutPerformance: Math.max(0, totalMatches - withPerformance),
+        pctWithPerformance: Math.round((withPerformance / totalMatches) * 100),
+        withSeries,
+        pctSeriesTagged: Math.round((withSeries / totalMatches) * 100),
+    };
+}
+
+/**
+ * Win / loss / other by home vs away vs neutral — one row per match that has performance
+ * (same universe as career summary). Venue type casing normalized.
+ */
+export async function getVenueTypeOutcomeSplit(
+    filters?: AnalyticsFilters
+): Promise<VenueTypeOutcomeRow[]> {
+    await connectDB();
+    const matchFilter = buildMatchFilterQuery(filters);
+
+    const rows = await Performance.aggregate<{
+        _id: string;
+        matches: number;
+        won: number;
+        lost: number;
+        other: number;
+    }>([
+        performanceMatchLookupStage(),
+        { $unwind: "$matchData" },
+        { $match: buildPrefixedMatchFilter(matchFilter) },
+        {
+            $group: {
+                _id: "$matchData._id",
+                venueTypeRaw: { $first: "$matchData.venueType" },
+                resultRaw: { $first: "$matchData.result" },
+            },
+        },
+        {
+            $addFields: {
+                venueKey: {
+                    $switch: {
+                        branches: [
+                            {
+                                case: {
+                                    $eq: [
+                                        { $toLower: { $ifNull: ["$venueTypeRaw", ""] } },
+                                        "home",
+                                    ],
+                                },
+                                then: "home",
+                            },
+                            {
+                                case: {
+                                    $eq: [
+                                        { $toLower: { $ifNull: ["$venueTypeRaw", ""] } },
+                                        "away",
+                                    ],
+                                },
+                                then: "away",
+                            },
+                            {
+                                case: {
+                                    $eq: [
+                                        { $toLower: { $ifNull: ["$venueTypeRaw", ""] } },
+                                        "neutral",
+                                    ],
+                                },
+                                then: "neutral",
+                            },
+                        ],
+                        default: "unknown",
+                    },
+                },
+                res: { $toLower: { $ifNull: ["$resultRaw", ""] } },
+            },
+        },
+        {
+            $group: {
+                _id: "$venueKey",
+                matches: { $sum: 1 },
+                won: { $sum: { $cond: [{ $eq: ["$res", "won"] }, 1, 0] } },
+                lost: { $sum: { $cond: [{ $eq: ["$res", "lost"] }, 1, 0] } },
+                other: {
+                    $sum: {
+                        $cond: [{ $in: ["$res", ["draw", "tie", "no_result"]] }, 1, 0],
+                    },
+                },
+            },
+        },
+    ]);
+
+    const byType = new Map(rows.map((r) => [String(r._id), r]));
+    return VENUE_TYPE_ORDER.map((key) => {
+        const r = byType.get(key);
+        return {
+            venueType: key,
+            matches: r?.matches ?? 0,
+            won: r?.won ?? 0,
+            lost: r?.lost ?? 0,
+            other: r?.other ?? 0,
+        };
+    });
+}
+
+/**
+ * Fixture volume by calendar month — matches that have performance (deduped), full career range.
+ */
+export async function getMonthlyMatchVolume(
+    filters?: AnalyticsFilters
+): Promise<MonthlyMatchVolume[]> {
+    await connectDB();
+    const matchFilter = buildMatchFilterQuery(filters);
+
+    const rows = await Performance.aggregate<{ _id: string; count: number }>([
+        performanceMatchLookupStage(),
+        { $unwind: "$matchData" },
+        { $match: buildPrefixedMatchFilter(matchFilter) },
+        {
+            $group: {
+                _id: "$matchData._id",
+                month: {
+                    $first: {
+                        $dateToString: {
+                            format: "%Y-%m",
+                            date: {
+                                $convert: {
+                                    input: "$matchData.date",
+                                    to: "date",
+                                    onError: null,
+                                    onNull: null,
+                                },
+                            },
+                            timezone: "UTC",
+                        },
+                    },
+                },
+            },
+        },
+        { $match: { month: { $nin: [null, ""] } } },
+        {
+            $group: {
+                _id: "$month",
+                count: { $sum: 1 },
+            },
+        },
+        { $sort: { _id: 1 } },
+    ]);
+
+    return rows.map((r) => {
+        const [y, m] = r._id.split("-").map(Number);
+        const d = new Date(Date.UTC(y, m - 1, 1));
+        const label = d.toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+        return { key: r._id, label, count: r.count };
+    });
+}
+
+/** Dismissal types across dismissed batting innings (subdoc must exist; excludes not_out / DNB). */
+export async function getDismissalBreakdown(
+    filters?: AnalyticsFilters
+): Promise<DismissalBreakdownItem[]> {
+    await connectDB();
+    const matchFilter = buildMatchFilterQuery(filters);
+
+    const inningsDismissal = (path: string) => ({
+        $cond: [
+            {
+                $and: [
+                    { $eq: [{ $type: `$${path}` }, "object"] },
+                    { $ne: [`$${path}.didNotBat`, true] },
+                    { $ne: [`$${path}.isNotOut`, true] },
+                ],
+            },
+            [{ $ifNull: [`$${path}.dismissalType`, "unknown"] }],
+            [],
+        ],
+    });
+
+    const rows = await Performance.aggregate<{ _id: string; count: number }>([
+        performanceMatchLookupStage(),
+        { $unwind: "$matchData" },
+        { $match: buildPrefixedMatchFilter(matchFilter) },
+        {
+            $project: {
+                types: {
+                    $filter: {
+                        input: {
+                            $concatArrays: [
+                                inningsDismissal("batting"),
+                                inningsDismissal("firstInningsBatting"),
+                                inningsDismissal("secondInningsBatting"),
+                            ],
+                        },
+                        as: "dt",
+                        cond: {
+                            $and: [
+                                { $ne: ["$$dt", null] },
+                                { $ne: [{ $toLower: { $toString: "$$dt" } }, "not_out"] },
+                            ],
+                        },
+                    },
+                },
+            },
+        },
+        { $unwind: "$types" },
+        { $group: { _id: "$types", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+    ]);
+
+    return rows.map((r) => ({ type: r._id || "unknown", count: r.count }));
+}
+
+/**
+ * Toss vs match result — one row per match (deduped), loose toss/team string match, case-insensitive result.
+ */
+export async function getTossCorrelationStats(
+    filters?: AnalyticsFilters
+): Promise<TossCorrelationStats> {
+    await connectDB();
+    const matchFilter = buildMatchFilterQuery(filters);
+
+    const rows = await Performance.aggregate<{
+        tossWinner?: string;
+        teamRepresented?: string;
+        result?: string;
+    }>([
+        performanceMatchLookupStage(),
+        { $unwind: "$matchData" },
+        { $match: buildPrefixedMatchFilter(matchFilter) },
+        {
+            $group: {
+                _id: "$matchData._id",
+                tossWinner: { $first: "$matchData.tossWinner" },
+                teamRepresented: { $first: "$matchData.teamRepresented" },
+                result: { $first: "$matchData.result" },
+            },
+        },
+    ]);
+
+    const stats: TossCorrelationStats = {
+        wonTossWonMatch: 0,
+        wonTossLostMatch: 0,
+        lostTossWonMatch: 0,
+        lostTossLostMatch: 0,
+        excludedNoTossOrSide: 0,
+        excludedNonDecisiveResult: 0,
+    };
+
+    for (const r of rows) {
+        const tw = (r.tossWinner ?? "").trim();
+        const tr = (r.teamRepresented ?? "").trim();
+        if (!tw || !tr) {
+            stats.excludedNoTossOrSide++;
+            continue;
+        }
+        const res = (r.result ?? "").toString().toLowerCase();
+        if (res !== "won" && res !== "lost") {
+            stats.excludedNonDecisiveResult++;
+            continue;
+        }
+        const wonToss = userWonToss(tw, tr);
+        if (wonToss) {
+            if (res === "won") stats.wonTossWonMatch++;
+            else stats.wonTossLostMatch++;
+        } else {
+            if (res === "won") stats.lostTossWonMatch++;
+            else stats.lostTossLostMatch++;
+        }
+    }
+
+    return stats;
 }
 
 /**

@@ -5,6 +5,11 @@ import {
     getTrendData,
     getOpponentStats,
     getVenueStats,
+    getRecordCoverageStats,
+    getVenueTypeOutcomeSplit,
+    getMonthlyMatchVolume,
+    getDismissalBreakdown,
+    getTossCorrelationStats,
 } from "@/lib/services/analytics.service";
 import { AnalyticsFilters } from "@/types";
 
@@ -22,6 +27,7 @@ export async function GET(request: NextRequest) {
             startDate: searchParams.get("startDate") || undefined,
             endDate: searchParams.get("endDate") || undefined,
             venue: searchParams.get("venue") || undefined,
+            venueType: searchParams.get("venueType") as AnalyticsFilters["venueType"] || undefined,
             homeAway: searchParams.get("homeAway") as AnalyticsFilters["homeAway"] || undefined,
         };
 
@@ -44,15 +50,41 @@ export async function GET(request: NextRequest) {
                 data = await getVenueStats(filters);
                 break;
             case "all":
-                // Get all analytics in one call
-                const [summary, formats, trends, opponents, venues] = await Promise.all([
+                const [
+                    summary,
+                    formats,
+                    trends,
+                    opponents,
+                    venues,
+                    recordCoverage,
+                    venueTypeOutcomes,
+                    monthlyVolume,
+                    dismissalBreakdown,
+                    tossCorrelation,
+                ] = await Promise.all([
                     getCareerSummary(filters),
                     getFormatBreakdown(filters),
                     getTrendData(filters),
                     getOpponentStats(filters),
                     getVenueStats(filters),
+                    getRecordCoverageStats(filters),
+                    getVenueTypeOutcomeSplit(filters),
+                    getMonthlyMatchVolume(filters),
+                    getDismissalBreakdown(filters),
+                    getTossCorrelationStats(filters),
                 ]);
-                data = { summary, formats, trends, opponents, venues };
+                data = {
+                    summary,
+                    formats,
+                    trends,
+                    opponents,
+                    venues,
+                    recordCoverage,
+                    venueTypeOutcomes,
+                    monthlyVolume,
+                    dismissalBreakdown,
+                    tossCorrelation,
+                };
                 break;
             default:
                 return NextResponse.json(

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-    getSeriesById,
+    getSeriesReadOnlyDetail,
     updateSeries,
     deleteSeries,
 } from "@/lib/services/series.service";
@@ -11,7 +11,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function GET(request: NextRequest, context: RouteContext) {
     try {
         const { id } = await context.params;
-        const series = await getSeriesById(id);
+        const series = await getSeriesReadOnlyDetail(id);
 
         if (!series) {
             return NextResponse.json(

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-    getMatchById,
+    getMatchReadOnlyDetail,
     updateMatch,
     deleteMatch,
 } from "@/lib/services/match.service";
@@ -11,7 +11,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function GET(request: NextRequest, context: RouteContext) {
     try {
         const { id } = await context.params;
-        const match = await getMatchById(id);
+        const match = await getMatchReadOnlyDetail(id);
 
         if (!match) {
             return NextResponse.json(
