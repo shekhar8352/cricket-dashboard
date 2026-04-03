@@ -5,18 +5,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { PLAYER } from "@/lib/constants";
-import LayoutDashboard from "lucide-react/dist/esm/icons/layout-dashboard";
-import FileEdit from "lucide-react/dist/esm/icons/file-edit";
-import BarChart3 from "lucide-react/dist/esm/icons/bar-chart-3";
-import Trophy from "lucide-react/dist/esm/icons/trophy";
-import Menu from "lucide-react/dist/esm/icons/menu";
-import X from "lucide-react/dist/esm/icons/x";
+import {
+    LayoutDashboard,
+    FileEdit,
+    BarChart3,
+    Trophy,
+    ListOrdered,
+    Menu,
+    X,
+} from "lucide-react";
 
 const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/data-entry", label: "Data Entry", icon: FileEdit },
     { href: "/analytics", label: "Analytics", icon: BarChart3 },
     { href: "/matches", label: "Matches", icon: Trophy },
+    { href: "/series", label: "Series", icon: ListOrdered },
+    { href: "/data-entry", label: "Data entry", icon: FileEdit },
 ];
 
 export function Navbar() {
@@ -24,102 +28,123 @@ export function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <nav className="sticky top-0 z-50 w-full glass">
-            <div className="container mx-auto px-4">
-                <div className="flex h-16 items-center justify-between">
-                    {/* Logo */}
-                    <Link href="/" className="flex items-center gap-3 group">
-                        <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-xl shadow-[0_0_15px_rgba(37,99,235,0.4)] group-hover:scale-110 transition-transform">
-                            🏏
-                        </div>
-                        <div className="hidden sm:block">
-                            <h1 className="text-lg font-bold text-white tracking-tight leading-none">
-                                {PLAYER.name}
-                            </h1>
-                            <p className="text-[10px] uppercase tracking-wider text-blue-400 font-bold mt-1">
-                                Career Analytics
-                            </p>
-                        </div>
-                    </Link>
+        <header className="sticky top-0 z-50 surface-nav">
+            <nav className="mx-auto flex h-[3.75rem] max-w-[1400px] items-center justify-between gap-3 px-4 sm:px-6" aria-label="Main">
+                <Link
+                    href="/"
+                    className="flex min-w-0 items-center gap-3 rounded-lg outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+                    onClick={() => setIsOpen(false)}
+                >
+                    <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/15 text-lg"
+                        aria-hidden
+                    >
+                        🏏
+                    </div>
+                    <div className="hidden min-w-0 sm:block">
+                        <p className="truncate text-sm font-semibold tracking-tight text-foreground">
+                            {PLAYER.name}
+                        </p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                            Career analytics
+                        </p>
+                    </div>
+                </Link>
 
-                    {/* Desktop Navigation */}
-                    <div className="hidden md:flex items-center gap-1">
+                <div className="hidden md:flex md:flex-1 md:justify-center">
+                    <div
+                        className="inline-flex items-center gap-0.5 rounded-full border border-border/80 bg-card/40 p-1"
+                        role="tablist"
+                        aria-label="Primary pages"
+                    >
                         {navItems.map((item) => {
                             const Icon = item.icon;
-                            const isActive = pathname === item.href;
+                            const isActive =
+                                item.href === "/"
+                                    ? pathname === "/"
+                                    : pathname === item.href || pathname.startsWith(`${item.href}/`);
                             return (
                                 <Link
                                     key={item.href}
                                     href={item.href}
                                     className={cn(
-                                        "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200",
+                                        "flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium transition-colors",
                                         isActive
-                                            ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)]"
-                                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                                            ? "bg-primary/15 text-foreground shadow-sm ring-1 ring-primary/25"
+                                            : "text-muted-foreground hover:bg-card hover:text-foreground"
                                     )}
+                                    aria-current={isActive ? "page" : undefined}
                                 >
-                                    <Icon size={18} />
-                                    <span>{item.label}</span>
+                                    <Icon size={17} strokeWidth={1.75} aria-hidden />
+                                    <span className="hidden lg:inline">{item.label}</span>
                                 </Link>
                             );
                         })}
                     </div>
-
-                    {/* Desktop Player Style Badge */}
-                    <div className="hidden lg:flex items-center gap-2">
-                        <span className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20">
-                            {PLAYER.battingStyle}
-                        </span>
-                        <span className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 rounded-lg border border-amber-500/20">
-                            {PLAYER.bowlingStyle}
-                        </span>
-                    </div>
-
-                    {/* Mobile Menu Button */}
-                    <button
-                        className="md:hidden p-2 text-gray-400 hover:text-white transition-colors"
-                        onClick={() => setIsOpen(!isOpen)}
-                    >
-                        {isOpen ? <X size={24} /> : <Menu size={24} />}
-                    </button>
                 </div>
-            </div>
 
-            {/* Mobile Navigation */}
-            {isOpen && (
-                <div className="md:hidden glass border-t border-white/5 animate-in slide-in-from-top duration-300">
-                    <div className="container mx-auto px-4 py-4 space-y-2">
+                <div className="hidden items-center gap-2 lg:flex">
+                    <span className="rounded-md border border-border/80 bg-card/50 px-2.5 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                        {PLAYER.battingStyle}
+                    </span>
+                    <span className="rounded-md border border-border/80 bg-card/50 px-2.5 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                        {PLAYER.bowlingStyle}
+                    </span>
+                </div>
+
+                <button
+                    type="button"
+                    className="flex h-11 w-11 items-center justify-center rounded-lg border border-border/60 text-muted-foreground transition-colors hover:bg-card hover:text-foreground md:hidden"
+                    onClick={() => setIsOpen(!isOpen)}
+                    aria-expanded={isOpen}
+                    aria-controls="mobile-nav-menu"
+                    aria-label={isOpen ? "Close menu" : "Open menu"}
+                >
+                    {isOpen ? <X size={22} /> : <Menu size={22} />}
+                </button>
+            </nav>
+
+            {isOpen ? (
+                <div
+                    id="mobile-nav-menu"
+                    className="border-t border-border/60 bg-background/95 backdrop-blur-md md:hidden"
+                >
+                    <div className="mx-auto max-w-[1400px] space-y-1 px-4 py-3">
                         {navItems.map((item) => {
                             const Icon = item.icon;
-                            const isActive = pathname === item.href;
+                            const isActive =
+                                item.href === "/"
+                                    ? pathname === "/"
+                                    : pathname === item.href || pathname.startsWith(`${item.href}/`);
                             return (
                                 <Link
                                     key={item.href}
                                     href={item.href}
                                     onClick={() => setIsOpen(false)}
                                     className={cn(
-                                        "flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all",
+                                        "flex min-h-[48px] items-center gap-3 rounded-lg px-4 py-3 text-base font-medium",
                                         isActive
-                                            ? "bg-blue-600 text-white"
-                                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                                            ? "bg-primary/15 text-foreground"
+                                            : "text-muted-foreground hover:bg-card"
                                     )}
+                                    aria-current={isActive ? "page" : undefined}
                                 >
-                                    <Icon size={20} />
-                                    <span>{item.label}</span>
+                                    <Icon size={20} strokeWidth={1.75} aria-hidden />
+                                    {item.label}
                                 </Link>
                             );
                         })}
-                        <div className="pt-4 flex items-center gap-2">
-                            <span className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20">
+                        <div className="flex flex-wrap gap-2 border-t border-border/60 pt-3">
+                            <span className="rounded-md border border-border/80 px-2.5 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                                 {PLAYER.battingStyle}
                             </span>
-                            <span className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 rounded-lg border border-amber-500/20">
+                            <span className="rounded-md border border-border/80 px-2.5 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                                 {PLAYER.bowlingStyle}
                             </span>
                         </div>
                     </div>
                 </div>
-            )}
-        </nav>
+            ) : null}
+        </header>
     );
 }

@@ -11,4 +11,7 @@ export {
     WinLossChart,
     DismissalBreakdownChart,
     TossAnalysisChart,
+    MonthlyMatchVolumeChart,
+    VenueTypeOutcomeChart,
+    TopVenuesChart,
 } from "./Charts";

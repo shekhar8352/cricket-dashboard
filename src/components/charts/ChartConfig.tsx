@@ -13,8 +13,8 @@ import {
     Legend,
     Filler,
 } from "chart.js";
+import type { ChartOptions } from "chart.js";
 
-// Register Chart.js components
 ChartJS.register(
     CategoryScale,
     LinearScale,
@@ -28,74 +28,115 @@ ChartJS.register(
     Filler
 );
 
-// Default chart options for consistent styling
-export const defaultChartOptions = {
+const TICK_COLOR = "hsla(215, 14%, 58%, 0.92)";
+const GRID_COLOR = "hsla(215, 16%, 55%, 0.08)";
+
+const chartFontFamily =
+    'var(--font-sans), "Plus Jakarta Sans", system-ui, sans-serif';
+
+/** Tooltip styling shared by line, bar, and doughnut charts */
+export const chartTooltipPlugin = {
+    backgroundColor: "hsla(240, 6%, 10%, 0.94)",
+    titleColor: "hsl(210, 20%, 96%)",
+    bodyColor: "hsl(215, 14%, 72%)",
+    borderColor: "hsla(240, 5%, 22%, 0.9)",
+    borderWidth: 1,
+    cornerRadius: 8,
+    padding: 12,
+    displayColors: true,
+    boxPadding: 4,
+    titleFont: { family: chartFontFamily, size: 12, weight: "bold" as const },
+    bodyFont: { family: chartFontFamily, size: 11, weight: "normal" as const },
+};
+
+/** Line / bar cartesian defaults */
+export const defaultChartOptions: ChartOptions<"line"> = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+        mode: "index",
+        intersect: false,
+    },
     plugins: {
         legend: {
+            display: true,
+            position: "bottom",
+            align: "start",
             labels: {
-                color: "#9ca3af",
+                color: TICK_COLOR,
+                boxWidth: 10,
+                boxHeight: 10,
+                padding: 16,
+                usePointStyle: true,
+                pointStyle: "circle",
                 font: {
-                    family: "Inter, sans-serif",
+                    family: chartFontFamily,
+                    size: 11,
+                    weight: "normal",
                 },
             },
         },
-        tooltip: {
-            backgroundColor: "#1f2937",
-            titleColor: "#f9fafb",
-            bodyColor: "#d1d5db",
-            borderColor: "#374151",
-            borderWidth: 1,
-            cornerRadius: 8,
-            padding: 12,
-        },
+        tooltip: chartTooltipPlugin,
     },
     scales: {
         x: {
             grid: {
-                color: "#374151",
+                color: GRID_COLOR,
+                lineWidth: 1,
+                drawTicks: false,
             },
+            border: { display: false },
             ticks: {
-                color: "#9ca3af",
+                color: TICK_COLOR,
+                maxRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: 8,
+                font: { family: chartFontFamily, size: 10 },
+                padding: 8,
             },
         },
         y: {
             grid: {
-                color: "#374151",
+                color: GRID_COLOR,
+                lineWidth: 1,
+                drawTicks: false,
             },
+            border: { display: false },
             ticks: {
-                color: "#9ca3af",
+                color: TICK_COLOR,
+                maxTicksLimit: 6,
+                font: { family: chartFontFamily, size: 10 },
+                padding: 10,
             },
         },
     },
 };
 
-// Color palette for charts
 export const chartColors = {
-    primary: "rgb(59, 130, 246)", // blue-500
-    primaryLight: "rgba(59, 130, 246, 0.1)",
-    secondary: "rgb(16, 185, 129)", // emerald-500
-    secondaryLight: "rgba(16, 185, 129, 0.1)",
-    tertiary: "rgb(245, 158, 11)", // amber-500
-    tertiaryLight: "rgba(245, 158, 11, 0.1)",
-    danger: "rgb(239, 68, 68)", // red-500
-    dangerLight: "rgba(239, 68, 68, 0.1)",
-    purple: "rgb(139, 92, 246)", // violet-500
-    purpleLight: "rgba(139, 92, 246, 0.1)",
-    success: "rgb(34, 197, 94)", // green-500
-    warning: "rgb(234, 179, 8)", // yellow-500
-    info: "rgb(59, 130, 246)", // blue-500
+    primary: "hsl(152, 41%, 48%)",
+    primaryLight: "hsla(152, 41%, 48%, 0.06)",
+    primaryStroke: "hsla(152, 41%, 48%, 0.35)",
+    secondary: "hsl(199, 65%, 52%)",
+    secondaryLight: "hsla(199, 65%, 52%, 0.06)",
+    tertiary: "hsl(38, 92%, 50%)",
+    tertiaryLight: "hsla(38, 92%, 50%, 0.06)",
+    danger: "hsl(0, 58%, 58%)",
+    dangerLight: "hsla(0, 58%, 58%, 0.06)",
+    purple: "hsl(258, 48%, 62%)",
+    purpleLight: "hsla(258, 48%, 62%, 0.08)",
+    success: "hsl(152, 41%, 45%)",
+    warning: "hsl(38, 88%, 54%)",
+    info: "hsl(199, 65%, 52%)",
+    neutral: "hsl(215, 14%, 48%)",
 };
 
-// Format colors array for pie/doughnut charts
 export const formatColors = [
     chartColors.primary,
     chartColors.secondary,
     chartColors.tertiary,
-    chartColors.danger,
     chartColors.purple,
-    "rgb(236, 72, 153)", // pink-500
+    chartColors.danger,
+    "hsl(330, 55%, 58%)",
 ];
 
 export { ChartJS };
