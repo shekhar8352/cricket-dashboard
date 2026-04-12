@@ -1,9 +1,57 @@
 import { connectDB } from "@/database/mongoose";
-import Performance, { IPerformance } from "@/lib/models/Performance";
+import Performance, { IInningsBatting, IPerformance } from "@/lib/models/Performance";
 import Match, { IMatch } from "@/lib/models/Match";
-import { PerformanceFormData } from "@/types";
-import { isMultiInningsFormat, MatchFormat } from "@/lib/constants";
+import { InningsBattingFormData, PerformanceFormData } from "@/types";
+import {
+    DISMISSAL_TYPES,
+    DismissalType,
+    isMultiInningsFormat,
+    MatchFormat,
+} from "@/lib/constants";
 import mongoose from "mongoose";
+
+const VALID_DISMISSAL_TYPES = new Set<string>(DISMISSAL_TYPES);
+
+/** Maps form batting to a Mongoose-safe innings object (no empty enum strings). */
+function inningsBattingFromForm(data: InningsBattingFormData): IInningsBatting {
+    const didNotBat = !!data.didNotBat;
+    const out: IInningsBatting = {
+        didNotBat,
+        runs: didNotBat ? 0 : data.runs || 0,
+        ballsFaced: didNotBat ? 0 : data.ballsFaced || 0,
+        fours: didNotBat ? 0 : data.fours || 0,
+        sixes: didNotBat ? 0 : data.sixes || 0,
+        strikeRate: 0,
+        boundaryRuns: 0,
+        boundaryPercentage: 0,
+        isFifty: false,
+        isCentury: false,
+        isDuck: false,
+        isNotOut: false,
+    };
+
+    if (didNotBat) {
+        return out;
+    }
+
+    const raw = data.dismissalType;
+    if (raw && VALID_DISMISSAL_TYPES.has(raw)) {
+        out.dismissalType = raw as DismissalType;
+    }
+
+    const bowler = data.dismissalBowler?.trim();
+    if (bowler) out.dismissalBowler = bowler;
+
+    const fielder = data.dismissalFielder?.trim();
+    if (fielder) out.dismissalFielder = fielder;
+
+    const pos = data.battingPosition;
+    if (typeof pos === "number" && Number.isFinite(pos) && pos >= 1 && pos <= 11) {
+        out.battingPosition = pos;
+    }
+
+    return out;
+}
 
 /**
  * Get performance for a specific match
@@ -52,46 +100,15 @@ export async function upsertPerformance(
     if (isMultiInnings) {
         // Test/First-class: use multi-innings fields
         if (data.firstInningsBatting) {
-            performanceData.firstInningsBatting = {
-                didNotBat: data.firstInningsBatting.didNotBat,
-                runs: data.firstInningsBatting.runs || 0,
-                ballsFaced: data.firstInningsBatting.ballsFaced || 0,
-                fours: data.firstInningsBatting.fours || 0,
-                sixes: data.firstInningsBatting.sixes || 0,
-                dismissalType: data.firstInningsBatting.dismissalType,
-                dismissalBowler: data.firstInningsBatting.dismissalBowler,
-                dismissalFielder: data.firstInningsBatting.dismissalFielder,
-                battingPosition: data.firstInningsBatting.battingPosition,
-                // Derived fields will be calculated in pre-save
-                strikeRate: 0,
-                boundaryRuns: 0,
-                boundaryPercentage: 0,
-                isFifty: false,
-                isCentury: false,
-                isDuck: false,
-                isNotOut: false,
-            };
+            performanceData.firstInningsBatting = inningsBattingFromForm(
+                data.firstInningsBatting
+            );
         }
 
         if (data.secondInningsBatting) {
-            performanceData.secondInningsBatting = {
-                didNotBat: data.secondInningsBatting.didNotBat,
-                runs: data.secondInningsBatting.runs || 0,
-                ballsFaced: data.secondInningsBatting.ballsFaced || 0,
-                fours: data.secondInningsBatting.fours || 0,
-                sixes: data.secondInningsBatting.sixes || 0,
-                dismissalType: data.secondInningsBatting.dismissalType,
-                dismissalBowler: data.secondInningsBatting.dismissalBowler,
-                dismissalFielder: data.secondInningsBatting.dismissalFielder,
-                battingPosition: data.secondInningsBatting.battingPosition,
-                strikeRate: 0,
-                boundaryRuns: 0,
-                boundaryPercentage: 0,
-                isFifty: false,
-                isCentury: false,
-                isDuck: false,
-                isNotOut: false,
-            };
+            performanceData.secondInningsBatting = inningsBattingFromForm(
+                data.secondInningsBatting
+            );
         }
 
         if (data.firstInningsBowling) {
@@ -130,24 +147,7 @@ export async function upsertPerformance(
     } else {
         // T20/ODI: use single innings fields
         if (data.batting) {
-            performanceData.batting = {
-                didNotBat: data.batting.didNotBat,
-                runs: data.batting.runs || 0,
-                ballsFaced: data.batting.ballsFaced || 0,
-                fours: data.batting.fours || 0,
-                sixes: data.batting.sixes || 0,
-                dismissalType: data.batting.dismissalType,
-                dismissalBowler: data.batting.dismissalBowler,
-                dismissalFielder: data.batting.dismissalFielder,
-                battingPosition: data.batting.battingPosition,
-                strikeRate: 0,
-                boundaryRuns: 0,
-                boundaryPercentage: 0,
-                isFifty: false,
-                isCentury: false,
-                isDuck: false,
-                isNotOut: false,
-            };
+            performanceData.batting = inningsBattingFromForm(data.batting);
         }
 
         if (data.bowling) {
