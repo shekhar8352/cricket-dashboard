@@ -45,7 +45,24 @@ const matchSchema = z.object({
     pitchType: z.enum(PITCH_TYPES).optional(),
     weatherCondition: z.enum(WEATHER_CONDITIONS).optional(),
     notes: z.string().optional(),
+    battingOrder: z.string().optional(),
+    session: z.string().optional(),
+    targetText: z.string().optional(),
+    teamRuns: z.string().optional(),
+    teamWickets: z.string().optional(),
+    teamOvers: z.string().optional(),
+    oppRuns: z.string().optional(),
+    oppWickets: z.string().optional(),
+    oppOvers: z.string().optional(),
 });
+
+type MatchFormValues = z.infer<typeof matchSchema>;
+
+function toNumber(value?: string): number | undefined {
+    if (value == null || value.trim() === "") return undefined;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+}
 
 interface MatchFormProps {
     initialData?: Partial<MatchFormData>;
@@ -64,7 +81,7 @@ export function MatchForm({
         register,
         handleSubmit,
         formState: { errors },
-    } = useForm<MatchFormData>({
+    } = useForm<MatchFormValues>({
         resolver: zodResolver(matchSchema) as any,
         defaultValues: {
             ...initialData,
@@ -88,7 +105,49 @@ export function MatchForm({
     });
 
     return (
-        <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-8">
+        <form
+            onSubmit={handleSubmit((values) => {
+                const teamRuns = toNumber(values.teamRuns);
+                const teamWickets = toNumber(values.teamWickets);
+                const teamOvers = toNumber(values.teamOvers);
+                const oppRuns = toNumber(values.oppRuns);
+                const oppWickets = toNumber(values.oppWickets);
+                const oppOvers = toNumber(values.oppOvers);
+                const payload: MatchFormData = {
+                    opponent: values.opponent,
+                    date: values.date,
+                    format: values.format,
+                    level: values.level,
+                    venue: values.venue,
+                    city: values.city,
+                    country: values.country,
+                    teamRepresented: values.teamRepresented,
+                    venueType: values.venueType,
+                    seriesId: values.seriesId,
+                    result: values.result,
+                    resultMargin: values.resultMargin,
+                    tossWinner: values.tossWinner,
+                    tossDecision: values.tossDecision,
+                    matchType: values.matchType,
+                    pitchType: values.pitchType,
+                    weatherCondition: values.weatherCondition,
+                    notes: values.notes,
+                    battedFirst: values.battingOrder === "bat" ? true : values.battingOrder === "bowl" ? false : undefined,
+                    dayNight: values.session === "night" ? true : values.session === "day" ? false : undefined,
+                    target: toNumber(values.targetText),
+                    teamScore:
+                        teamRuns != null || teamWickets != null || teamOvers != null
+                            ? { runs: teamRuns ?? 0, wickets: teamWickets ?? 0, overs: teamOvers ?? 0 }
+                            : undefined,
+                    opponentScore:
+                        oppRuns != null || oppWickets != null || oppOvers != null
+                            ? { runs: oppRuns ?? 0, wickets: oppWickets ?? 0, overs: oppOvers ?? 0 }
+                            : undefined,
+                };
+                onSubmit(payload);
+            })}
+            className="space-y-8"
+        >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Basic Info Section */}
                 <div className="space-y-6">
@@ -364,6 +423,52 @@ export function MatchForm({
                                 ))}
                             </select>
                         </div>
+                    </div>
+                </div>
+
+                <div className="space-y-6 md:col-span-2">
+                    <div className="flex items-center gap-2 border-b border-border pb-2">
+                        <Trophy size={16} className="text-primary" />
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Scores</h3>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="space-y-2">
+                            <label htmlFor="batting-order" className="text-sm font-medium text-foreground">Who batted first</label>
+                            <select id="batting-order" {...register("battingOrder")} className="min-h-11 w-full cursor-pointer rounded-xl border border-border bg-background px-4 py-3 text-foreground">
+                                <option value="">Not set</option>
+                                <option value="bat">We batted first</option>
+                                <option value="bowl">We bowled first</option>
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label htmlFor="session" className="text-sm font-medium text-foreground">Session</label>
+                            <select id="session" {...register("session")} className="min-h-11 w-full cursor-pointer rounded-xl border border-border bg-background px-4 py-3 text-foreground">
+                                <option value="">Not set</option>
+                                <option value="day">Day</option>
+                                <option value="night">Day/night</option>
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label htmlFor="target" className="text-sm font-medium text-foreground">Target</label>
+                            <input id="target" type="number" min="0" {...register("targetText")} className="min-h-11 w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground" />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
+                        {(
+                            [
+                                ["teamRuns", "Our runs"],
+                                ["teamWickets", "Our wickets"],
+                                ["teamOvers", "Our overs"],
+                                ["oppRuns", "Their runs"],
+                                ["oppWickets", "Their wickets"],
+                                ["oppOvers", "Their overs"],
+                            ] as const
+                        ).map(([name, label]) => (
+                            <div key={name} className="space-y-2">
+                                <label htmlFor={name} className="text-sm font-medium text-foreground">{label}</label>
+                                <input id={name} type="number" min="0" step={name.includes("Overs") ? "0.1" : "1"} {...register(name)} className="min-h-11 w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground" />
+                            </div>
+                        ))}
                     </div>
                 </div>
 

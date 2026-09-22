@@ -6,3 +6,4 @@ export {
     FieldingFormSection,
     ContextFormSection,
 } from "./PerformanceForms";
+export { DetailedBattingSection, DetailedBowlingSection } from "./DetailedPerformance";

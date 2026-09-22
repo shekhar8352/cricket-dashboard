@@ -15,3 +15,13 @@ export {
     VenueTypeOutcomeChart,
     TopVenuesChart,
 } from "./Charts";
+export {
+    ScoreDistributionChart,
+    PhaseChart,
+    PaceVsSpinChart,
+    WagonWheelChart,
+    SkillsRadarChart,
+    RunsVsSrScatter,
+    RollingFormChart,
+    CalendarHeatmap,
+} from "./AdvancedCharts";
