@@ -1,23 +1,20 @@
 import { Suspense } from "react";
-import { StatCard, Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { StatCard, Card } from "@/components/ui/Card";
 import { PageHeader, SectionHeader } from "@/components/ui/SectionHeader";
 import {
   RunsOverTimeChart,
   FormatBreakdownChart,
   RecentFormChart,
+  SkillsRadarChart,
 } from "@/components/charts";
-import { getCareerSummary, getFormatBreakdown, getTrendData } from "@/lib/services/analytics.service";
+import { getHomeDashboard } from "@/lib/services/analytics.service";
 import { PLAYER } from "@/lib/constants";
 import { formatBattingScore, formatBowlingFigures } from "@/lib/utils";
 import Link from "next/link";
-import { PlusCircle, ArrowRight } from "lucide-react";
+import { ArrowRight, Crosshair, Flame, Hand, PlusCircle, Star, Swords, Trophy } from "lucide-react";
 
 async function DashboardContent() {
-  const [summary, formats, trends] = await Promise.all([
-    getCareerSummary(),
-    getFormatBreakdown(),
-    getTrendData(),
-  ]);
+  const { summary, formats, trends, form, radar } = await getHomeDashboard();
 
   const hasData = summary.matches > 0;
 
@@ -40,8 +37,8 @@ async function DashboardContent() {
 
       {!hasData ? (
         <Card className="flex flex-col items-center justify-center p-10 text-center sm:p-12">
-          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-card text-3xl">
-            🏏
+          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-card text-primary">
+            <Trophy size={28} aria-hidden />
           </div>
           <h2 className="mb-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
             Start your career log
@@ -66,16 +63,12 @@ async function DashboardContent() {
               description="Numbers pulled from every performance you have logged."
             />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 sm:gap-5">
-              <StatCard
-                title="Matches"
-                value={summary.matches}
-                icon="🏏"
-              />
+              <StatCard title="Matches" value={summary.matches} icon={Trophy} />
               <StatCard
                 title="Runs"
                 value={summary.runs.toLocaleString()}
                 subtitle={`Avg: ${summary.battingAverage ?? "-"}`}
-                icon="🏃"
+                icon={Swords}
               />
               <StatCard
                 title="Highest"
@@ -83,13 +76,13 @@ async function DashboardContent() {
                   summary.highestScore.runs,
                   summary.highestScore.isNotOut
                 )}
-                icon="⭐"
+                icon={Star}
               />
               <StatCard
                 title="Wickets"
                 value={summary.wickets}
                 subtitle={`Avg: ${summary.bowlingAverage ?? "-"}`}
-                icon="🎯"
+                icon={Crosshair}
               />
               <StatCard
                 title="Best Bowling"
@@ -97,13 +90,9 @@ async function DashboardContent() {
                   summary.bestBowling.wickets,
                   summary.bestBowling.runs
                 )}
-                icon="🔥"
+                icon={Flame}
               />
-              <StatCard
-                title="Catches"
-                value={summary.catches}
-                icon="🧤"
-              />
+              <StatCard title="Catches" value={summary.catches} icon={Hand} />
             </div>
           </div>
 
@@ -130,6 +119,26 @@ async function DashboardContent() {
                 </span>
               </div>
             ))}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="surface-panel space-y-2 p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Last 5 average</p>
+              <p className="font-mono text-3xl font-semibold tabular-nums">{form.last5.average ?? "—"}</p>
+              <p className="text-sm text-muted-foreground">Career {form.careerAverage ?? "—"} · SR {form.last5.strikeRate}</p>
+            </div>
+            <div className="surface-panel space-y-2 p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Last 10 average</p>
+              <p className="font-mono text-3xl font-semibold tabular-nums">{form.last10.average ?? "—"}</p>
+              <p className="text-sm text-muted-foreground">Career SR {form.careerStrikeRate}</p>
+              <Link href="/analytics?tab=batting" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
+                Open batting
+                <ArrowRight size={16} className="ml-1" aria-hidden />
+              </Link>
+            </div>
+            <div className="surface-chart h-64 p-4">
+              <SkillsRadarChart data={radar} />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">

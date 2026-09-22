@@ -10,26 +10,60 @@ import {
     getMonthlyMatchVolume,
     getDismissalBreakdown,
     getTossCorrelationStats,
+    getAnalyticsByTab,
 } from "@/lib/services/analytics.service";
 import { AnalyticsFilters } from "@/types";
+import type { AnalyticsTabId } from "@/lib/analytics/types";
+
+const TABS = new Set<AnalyticsTabId>([
+    "overview",
+    "batting",
+    "bowling",
+    "fielding",
+    "allround",
+    "splits",
+    "h2h",
+    "trends",
+]);
+
+function readFilters(searchParams: URLSearchParams): AnalyticsFilters {
+    const captain = searchParams.get("captain");
+    const tier = searchParams.get("tier");
+    return {
+        format: (searchParams.get("format") as AnalyticsFilters["format"]) || undefined,
+        level: (searchParams.get("level") as AnalyticsFilters["level"]) || undefined,
+        opponent: searchParams.get("opponent") || undefined,
+        series: searchParams.get("series") || undefined,
+        startDate: searchParams.get("startDate") || undefined,
+        endDate: searchParams.get("endDate") || undefined,
+        venue: searchParams.get("venue") || undefined,
+        venueType: (searchParams.get("venueType") as AnalyticsFilters["venueType"]) || undefined,
+        homeAway: searchParams.get("homeAway") || undefined,
+        year: searchParams.get("year") || undefined,
+        result: (searchParams.get("result") as AnalyticsFilters["result"]) || undefined,
+        captain: captain === "yes" || captain === "no" ? captain : undefined,
+        tier: tier === "international" || tier === "domestic" || tier === "all" ? tier : undefined,
+        dimension: searchParams.get("dimension") || undefined,
+    };
+}
 
 export async function GET(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams;
         const type = searchParams.get("type") || "summary";
+        const tab = searchParams.get("tab");
+        const filters = readFilters(searchParams);
 
-        // Parse filters from query params
-        const filters: AnalyticsFilters = {
-            format: searchParams.get("format") as AnalyticsFilters["format"] || undefined,
-            level: searchParams.get("level") as AnalyticsFilters["level"] || undefined,
-            opponent: searchParams.get("opponent") || undefined,
-            series: searchParams.get("series") || undefined,
-            startDate: searchParams.get("startDate") || undefined,
-            endDate: searchParams.get("endDate") || undefined,
-            venue: searchParams.get("venue") || undefined,
-            venueType: searchParams.get("venueType") as AnalyticsFilters["venueType"] || undefined,
-            homeAway: searchParams.get("homeAway") as AnalyticsFilters["homeAway"] || undefined,
-        };
+        if (tab) {
+            if (!TABS.has(tab as AnalyticsTabId)) {
+                return NextResponse.json(
+                    { success: false, error: "Invalid analytics tab" },
+                    { status: 400 }
+                );
+            }
+            const data = await getAnalyticsByTab(tab as AnalyticsTabId, filters);
+            return NextResponse.json({ success: true, data });
+        }
 
         let data;
 

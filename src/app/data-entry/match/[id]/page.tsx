@@ -10,9 +10,11 @@ import {
     BowlingFormSection,
     FieldingFormSection,
     ContextFormSection,
+    DetailedBattingSection,
+    DetailedBowlingSection,
 } from "@/components/forms";
 import { MatchListItem, PerformanceFormData } from "@/types";
-import { isMultiInningsFormat, MatchFormat } from "@/lib/constants";
+import { detailedIngestDefaultOpen, isMultiInningsFormat, MatchFormat } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import {
     ChevronLeft,
@@ -44,11 +46,15 @@ export default function PerformanceEntryPage({
     const [activeTab, setActiveTab] = useState(0);
 
     const isMultiInnings = match ? isMultiInningsFormat(match.format as MatchFormat) : false;
+    const advancedOpen = match ? detailedIngestDefaultOpen(match.level) : false;
 
     const {
         register,
         handleSubmit,
         watch,
+        control,
+        setValue,
+        getValues,
         formState: { errors },
         reset,
     } = useForm<PerformanceFormData>({
@@ -105,6 +111,7 @@ export default function PerformanceEntryPage({
                     fielding: data.data.fielding || { catches: 0, runOuts: 0, stumpings: 0 },
                     isCaptain: data.data.isCaptain,
                     isWicketkeeper: data.data.isWicketkeeper,
+                    playerOfMatch: data.data.playerOfMatch,
                 });
             }
         } catch (err) {
@@ -279,24 +286,48 @@ export default function PerformanceEntryPage({
                                 <div className="animate-in fade-in duration-500">
                                     {/* Single Innings - Batting */}
                                     {!isMultiInnings && activeTab === 0 && (
-                                        <BattingFormSection
-                                            register={register}
-                                            errors={errors}
-                                            prefix="batting"
-                                            title="Batting Impact"
-                                            watchDidNotBat={watchBattingDNB}
-                                        />
+                                        <div className="space-y-8">
+                                            <BattingFormSection
+                                                register={register}
+                                                errors={errors}
+                                                prefix="batting"
+                                                title="Batting Impact"
+                                                watchDidNotBat={watchBattingDNB}
+                                            />
+                                            <DetailedBattingSection
+                                                register={register}
+                                                control={control}
+                                                setValue={setValue}
+                                                getValues={getValues}
+                                                prefix="batting"
+                                                format={match.format}
+                                                defaultOpen={advancedOpen}
+                                                hidden={!!watchBattingDNB}
+                                            />
+                                        </div>
                                     )}
 
                                     {/* Single Innings - Bowling */}
                                     {!isMultiInnings && activeTab === 1 && (
-                                        <BowlingFormSection
-                                            register={register}
-                                            errors={errors}
-                                            prefix="bowling"
-                                            title="Bowling Impact"
-                                            watchDidNotBowl={watchBowlingDNB}
-                                        />
+                                        <div className="space-y-8">
+                                            <BowlingFormSection
+                                                register={register}
+                                                errors={errors}
+                                                prefix="bowling"
+                                                title="Bowling Impact"
+                                                watchDidNotBowl={watchBowlingDNB}
+                                            />
+                                            <DetailedBowlingSection
+                                                register={register}
+                                                control={control}
+                                                setValue={setValue}
+                                                getValues={getValues}
+                                                prefix="bowling"
+                                                format={match.format}
+                                                defaultOpen={advancedOpen}
+                                                hidden={!!watchBowlingDNB}
+                                            />
+                                        </div>
                                     )}
 
                                     {/* Single Innings - Fielding */}
@@ -310,40 +341,88 @@ export default function PerformanceEntryPage({
 
                                     {/* Multi Innings - Logic */}
                                     {isMultiInnings && activeTab === 0 && (
-                                        <BattingFormSection
-                                            register={register}
-                                            errors={errors}
-                                            prefix="firstInningsBatting"
-                                            title="1st Innings Batting"
-                                            watchDidNotBat={watch1stBatDNB}
-                                        />
+                                        <div className="space-y-8">
+                                            <BattingFormSection
+                                                register={register}
+                                                errors={errors}
+                                                prefix="firstInningsBatting"
+                                                title="1st Innings Batting"
+                                                watchDidNotBat={watch1stBatDNB}
+                                            />
+                                            <DetailedBattingSection
+                                                register={register}
+                                                control={control}
+                                                setValue={setValue}
+                                                getValues={getValues}
+                                                prefix="firstInningsBatting"
+                                                format={match.format}
+                                                defaultOpen={advancedOpen}
+                                                hidden={!!watch1stBatDNB}
+                                            />
+                                        </div>
                                     )}
                                     {isMultiInnings && activeTab === 1 && (
-                                        <BowlingFormSection
-                                            register={register}
-                                            errors={errors}
-                                            prefix="firstInningsBowling"
-                                            title="1st Innings Bowling"
-                                            watchDidNotBowl={watch1stBowlDNB}
-                                        />
+                                        <div className="space-y-8">
+                                            <BowlingFormSection
+                                                register={register}
+                                                errors={errors}
+                                                prefix="firstInningsBowling"
+                                                title="1st Innings Bowling"
+                                                watchDidNotBowl={watch1stBowlDNB}
+                                            />
+                                            <DetailedBowlingSection
+                                                register={register}
+                                                control={control}
+                                                setValue={setValue}
+                                                getValues={getValues}
+                                                prefix="firstInningsBowling"
+                                                format={match.format}
+                                                defaultOpen={advancedOpen}
+                                                hidden={!!watch1stBowlDNB}
+                                            />
+                                        </div>
                                     )}
                                     {isMultiInnings && activeTab === 2 && (
-                                        <BattingFormSection
-                                            register={register}
-                                            errors={errors}
-                                            prefix="secondInningsBatting"
-                                            title="2nd Innings Batting"
-                                            watchDidNotBat={watch2ndBatDNB}
-                                        />
+                                        <div className="space-y-8">
+                                            <BattingFormSection
+                                                register={register}
+                                                errors={errors}
+                                                prefix="secondInningsBatting"
+                                                title="2nd Innings Batting"
+                                                watchDidNotBat={watch2ndBatDNB}
+                                            />
+                                            <DetailedBattingSection
+                                                register={register}
+                                                control={control}
+                                                setValue={setValue}
+                                                getValues={getValues}
+                                                prefix="secondInningsBatting"
+                                                format={match.format}
+                                                defaultOpen={advancedOpen}
+                                                hidden={!!watch2ndBatDNB}
+                                            />
+                                        </div>
                                     )}
                                     {isMultiInnings && activeTab === 3 && (
-                                        <BowlingFormSection
-                                            register={register}
-                                            errors={errors}
-                                            prefix="secondInningsBowling"
-                                            title="2nd Innings Bowling"
-                                            watchDidNotBowl={watch2ndBowlDNB}
-                                        />
+                                        <div className="space-y-8">
+                                            <BowlingFormSection
+                                                register={register}
+                                                errors={errors}
+                                                prefix="secondInningsBowling"
+                                                title="2nd Innings Bowling"
+                                                watchDidNotBowl={watch2ndBowlDNB}
+                                            />
+                                            <DetailedBowlingSection
+                                                register={register}
+                                                control={control}
+                                                setValue={setValue}
+                                                getValues={getValues}
+                                                prefix="secondInningsBowling"
+                                                format={match.format}
+                                                defaultOpen={advancedOpen}
+                                                hidden={!!watch2ndBowlDNB}
+                                            />
+                                        </div>
                                     )}
                                     {isMultiInnings && activeTab === 4 && (
                                         <div className="space-y-12">
