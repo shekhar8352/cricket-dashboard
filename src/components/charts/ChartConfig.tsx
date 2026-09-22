@@ -12,6 +12,10 @@ import {
     Tooltip,
     Legend,
     Filler,
+    RadialLinearScale,
+    RadarController,
+    PolarAreaController,
+    ScatterController,
 } from "chart.js";
 import type { ChartOptions } from "chart.js";
 
@@ -25,7 +29,11 @@ ChartJS.register(
     Title,
     Tooltip,
     Legend,
-    Filler
+    Filler,
+    RadialLinearScale,
+    RadarController,
+    PolarAreaController,
+    ScatterController
 );
 
 const TICK_COLOR = "hsla(215, 14%, 58%, 0.92)";
