@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
     variant?: "default" | "stat" | "highlight" | "chart" | "panel";
@@ -87,7 +88,7 @@ interface StatCardProps {
     title: string;
     value: string | number;
     subtitle?: string;
-    icon?: string;
+    icon?: LucideIcon;
     trend?: { value: number; isPositive: boolean };
     className?: string;
 }
@@ -102,13 +103,23 @@ export function StatCard({
 }: StatCardProps) {
     return (
         <Card variant="stat" className={cn("relative overflow-hidden group", className)}>
-            <div className="absolute -right-3 -top-3 text-5xl opacity-[0.04] pointer-events-none select-none">
-                {icon}
-            </div>
+            {icon
+                ? React.createElement(icon, {
+                      className: "pointer-events-none absolute -right-1 -top-1 h-14 w-14 text-foreground opacity-[0.07]",
+                      "aria-hidden": true,
+                  })
+                : null}
 
             <div className="relative space-y-3">
                 <div className="flex items-center gap-2">
-                    {icon ? <span className="text-lg leading-none" aria-hidden>{icon}</span> : null}
+                    {icon
+                        ? React.createElement(icon, {
+                              size: 16,
+                              strokeWidth: 1.75,
+                              className: "text-primary",
+                              "aria-hidden": true,
+                          })
+                        : null}
                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                         {title}
                     </p>

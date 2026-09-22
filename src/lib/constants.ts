@@ -15,7 +15,6 @@ export const MATCH_FORMATS = [
     "List-A",
     "T20-domestic",
     "Youth ODI",
-    "Youth ODI",
     "Youth Test",
     "Youth T20",
 ] as const;
@@ -151,3 +150,153 @@ export const DISMISSAL_LABELS: Record<DismissalType, string> = {
     not_out: "Not Out",
     retired_hurt: "Retired Hurt",
 };
+
+/** Levels treated as domestic for the tier filter. IPL stays its own level. */
+export const DOMESTIC_LEVELS: MatchLevel[] = [
+    "domestic",
+    "ranji",
+    "under19",
+    "list-a",
+    "club",
+];
+
+export const PHASE_IDS = ["powerplay", "middle", "death", "new_ball", "second_new_ball"] as const;
+export type PhaseId = (typeof PHASE_IDS)[number];
+
+export interface PhaseDefinition {
+    id: PhaseId;
+    label: string;
+    range: string;
+}
+
+const T20_PHASES: PhaseDefinition[] = [
+    { id: "powerplay", label: "Powerplay", range: "1–6" },
+    { id: "middle", label: "Middle", range: "7–15" },
+    { id: "death", label: "Death", range: "16–20" },
+];
+
+const ODI_PHASES: PhaseDefinition[] = [
+    { id: "powerplay", label: "Powerplay", range: "1–10" },
+    { id: "middle", label: "Middle", range: "11–40" },
+    { id: "death", label: "Death", range: "41–50" },
+];
+
+const FIRST_CLASS_PHASES: PhaseDefinition[] = [
+    { id: "new_ball", label: "New ball", range: "1–30" },
+    { id: "middle", label: "Middle", range: "31–80" },
+    { id: "second_new_ball", label: "Second new ball", range: "81+" },
+];
+
+export function phasesForFormat(format: string): PhaseDefinition[] {
+    if (format === "Test" || format === "First-class" || format === "Youth Test") {
+        return FIRST_CLASS_PHASES;
+    }
+    if (format === "ODI" || format === "List-A" || format === "Youth ODI") {
+        return ODI_PHASES;
+    }
+    return T20_PHASES;
+}
+
+export const PHASE_LABELS: Record<PhaseId, string> = {
+    powerplay: "Powerplay",
+    middle: "Middle",
+    death: "Death",
+    new_ball: "New ball",
+    second_new_ball: "Second new ball",
+};
+
+export const BOWLER_TYPES = [
+    "right_arm_pace",
+    "left_arm_pace",
+    "off_spin",
+    "leg_spin",
+    "left_arm_orthodox",
+    "left_arm_wrist",
+] as const;
+export type BowlerType = (typeof BOWLER_TYPES)[number];
+
+export const BOWLER_TYPE_LABELS: Record<BowlerType, string> = {
+    right_arm_pace: "Right-arm pace",
+    left_arm_pace: "Left-arm pace",
+    off_spin: "Off spin",
+    leg_spin: "Leg spin",
+    left_arm_orthodox: "Left-arm orthodox",
+    left_arm_wrist: "Left-arm wrist spin",
+};
+
+export const DELIVERY_LENGTHS = [
+    "short",
+    "back_of_length",
+    "good",
+    "full",
+    "yorker",
+    "full_toss",
+] as const;
+export type DeliveryLength = (typeof DELIVERY_LENGTHS)[number];
+
+export const DELIVERY_LENGTH_LABELS: Record<DeliveryLength, string> = {
+    short: "Short",
+    back_of_length: "Back of a length",
+    good: "Good length",
+    full: "Full",
+    yorker: "Yorker",
+    full_toss: "Full toss",
+};
+
+export const DELIVERY_LINES = ["off", "middle", "leg", "wide_off", "wide_leg"] as const;
+export type DeliveryLine = (typeof DELIVERY_LINES)[number];
+
+export const DELIVERY_LINE_LABELS: Record<DeliveryLine, string> = {
+    off: "Off",
+    middle: "Middle",
+    leg: "Leg",
+    wide_off: "Wide outside off",
+    wide_leg: "Wide on leg",
+};
+
+export const SHOTS = [
+    "drive",
+    "cut",
+    "pull",
+    "sweep",
+    "defence",
+    "loft",
+    "flick",
+    "leave",
+    "hook",
+    "glance",
+    "reverse",
+] as const;
+export type ShotPlayed = (typeof SHOTS)[number];
+
+export const SHOT_LABELS: Record<ShotPlayed, string> = {
+    drive: "Drive",
+    cut: "Cut",
+    pull: "Pull",
+    sweep: "Sweep",
+    defence: "Defence",
+    loft: "Loft",
+    flick: "Flick",
+    leave: "Leave",
+    hook: "Hook",
+    glance: "Glance",
+    reverse: "Reverse",
+};
+
+export const SHOT_ZONES = [
+    { id: "thirdMan", label: "Third man" },
+    { id: "point", label: "Point" },
+    { id: "cover", label: "Cover" },
+    { id: "longOff", label: "Long-off" },
+    { id: "longOn", label: "Long-on" },
+    { id: "midWicket", label: "Midwicket" },
+    { id: "squareLeg", label: "Square leg" },
+    { id: "fineLeg", label: "Fine leg" },
+] as const;
+
+export type ShotZoneId = (typeof SHOT_ZONES)[number]["id"];
+
+/** Levels that open the advanced scorecard by default. */
+export function detailedIngestDefaultOpen(level: string): boolean {
+    return level === "international" || level === "ipl";
+}
