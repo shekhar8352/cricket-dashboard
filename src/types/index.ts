@@ -10,6 +10,12 @@ import {
     SeriesFormat,
     SeriesStatus,
     WeatherCondition,
+    BowlerType,
+    DeliveryLength,
+    DeliveryLine,
+    ShotPlayed,
+    PhaseId,
+    ShotZoneId,
 } from "@/lib/constants";
 
 // ============================================
@@ -93,6 +99,11 @@ export interface MatchFormData {
     tossWinner?: string;
     tossDecision?: "bat" | "bowl";
     matchType?: MatchTypeOption;
+    battedFirst?: boolean;
+    dayNight?: boolean;
+    teamScore?: { runs: number; wickets: number; overs: number };
+    opponentScore?: { runs: number; wickets: number; overs: number };
+    target?: number;
     notes?: string;
 }
 
@@ -188,16 +199,96 @@ export interface MatchFilters {
 // Performance Types
 // ============================================
 
+export interface PaceSpinFormData {
+    runs?: number;
+    balls?: number;
+    fours?: number;
+    sixes?: number;
+    dismissed?: boolean;
+}
+
+export interface BattingPhaseFormData {
+    phase: PhaseId;
+    runs?: number;
+    balls?: number;
+    fours?: number;
+    sixes?: number;
+    dots?: number;
+}
+
+export interface PartnershipFormData {
+    wicket?: number;
+    partner?: string;
+    runs?: number;
+    balls?: number;
+    myRuns?: number;
+}
+
+export interface BattingDetailFormData {
+    dots?: number;
+    singles?: number;
+    twos?: number;
+    threes?: number;
+    minutesBatted?: number;
+    ballsTo50?: number;
+    ballsTo100?: number;
+    entryTeamScore?: number;
+    entryWickets?: number;
+    entryOver?: number;
+    vsPace?: PaceSpinFormData;
+    vsSpin?: PaceSpinFormData;
+    phases?: BattingPhaseFormData[];
+    zones?: Partial<Record<ShotZoneId, number>>;
+    bowlerType?: BowlerType | "";
+    deliveryLength?: DeliveryLength | "";
+    deliveryLine?: DeliveryLine | "";
+    shotPlayed?: ShotPlayed | "";
+    dismissalPhase?: PhaseId | "";
+    partnerships?: PartnershipFormData[];
+}
+
+export interface BowlingPhaseFormData {
+    phase: PhaseId;
+    balls?: number;
+    runs?: number;
+    wickets?: number;
+    dots?: number;
+}
+
+export interface SpellFormData {
+    overs?: number;
+    runs?: number;
+    wickets?: number;
+}
+
+export interface WicketDetailFormData {
+    batterPosition?: number;
+    dismissalType?: DismissalType | "";
+    deliveryLength?: DeliveryLength | "";
+    bowlingPhase?: PhaseId | "";
+}
+
+export interface BowlingDetailFormData {
+    dots?: number;
+    foursConceded?: number;
+    sixesConceded?: number;
+    phases?: BowlingPhaseFormData[];
+    spells?: SpellFormData[];
+    wicketsDetail?: WicketDetailFormData[];
+    catchesDroppedOffBowling?: number;
+}
+
 export interface InningsBattingFormData {
     didNotBat: boolean;
     runs: number;
     ballsFaced: number;
     fours: number;
     sixes: number;
-    dismissalType?: DismissalType;
+    dismissalType?: DismissalType | "";
     dismissalBowler?: string;
     dismissalFielder?: string;
     battingPosition?: number;
+    detail?: BattingDetailFormData;
 }
 
 export interface InningsBowlingFormData {
@@ -208,12 +299,17 @@ export interface InningsBowlingFormData {
     wickets: number;
     wides: number;
     noBalls: number;
+    detail?: BowlingDetailFormData;
 }
 
 export interface FieldingFormData {
     catches: number;
     runOuts: number;
     stumpings: number;
+    dropped?: number;
+    directHits?: number;
+    runsSavedEstimate?: number;
+    misfields?: number;
 }
 
 export interface PerformanceFormData {
@@ -231,6 +327,7 @@ export interface PerformanceFormData {
     // Context
     isCaptain: boolean;
     isWicketkeeper: boolean;
+    playerOfMatch?: boolean;
 }
 
 // ============================================
@@ -263,7 +360,16 @@ export interface CareerSummary {
     matchesWon: number;
     matchesLost: number;
     matchesDrawn: number;
+    matchesTied: number;
+    matchesNoResult: number;
     winPercentage: number;
+    playerOfMatch: number;
+    boundaryPercentage: number;
+    ballsPerBoundary: number | null;
+    fourWicketHauls: number;
+    thirties: number;
+    goldenDucks: number;
+    bowlingInnings: number;
 }
 
 export interface FormatStats {
@@ -326,6 +432,11 @@ export interface AnalyticsFilters {
     venue?: string;
     venueType?: VenueType;
     homeAway?: string;
+    year?: string;
+    result?: MatchResult;
+    captain?: "yes" | "no";
+    tier?: "international" | "domestic" | "all";
+    dimension?: string;
 }
 
 /** Matches in filter vs performances / series tagging — data completeness. */
