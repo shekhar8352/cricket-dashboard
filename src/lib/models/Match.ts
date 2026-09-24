@@ -18,10 +18,24 @@ export interface IMatch extends Document {
     tossWinner?: string;
     tossDecision?: "bat" | "bowl";
     matchType?: "group" | "knockout" | "final" | "regular";
+    battedFirst?: boolean;
+    dayNight?: boolean;
+    teamScore?: { runs: number; wickets: number; overs: number };
+    opponentScore?: { runs: number; wickets: number; overs: number };
+    target?: number;
     notes?: string;
     createdAt: Date;
     updatedAt: Date;
 }
+
+const TeamScoreSchema = new Schema(
+    {
+        runs: { type: Number },
+        wickets: { type: Number },
+        overs: { type: Number },
+    },
+    { _id: false }
+);
 
 const MatchSchema = new Schema<IMatch>(
     {
@@ -68,6 +82,11 @@ const MatchSchema = new Schema<IMatch>(
             type: String,
             enum: ["group", "knockout", "final", "regular"],
         },
+        battedFirst: { type: Boolean },
+        dayNight: { type: Boolean },
+        teamScore: { type: TeamScoreSchema },
+        opponentScore: { type: TeamScoreSchema },
+        target: { type: Number },
         notes: { type: String },
     },
     { timestamps: true }
